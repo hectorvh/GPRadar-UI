@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GPRadar · Hyperbola detector</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.app[data-theme="light"]{--bg:#F5F7F8;--surface:#FFFFFF;--side:#EDF1F3;--text:#00293A;--muted:#4A5F69;--border:#D4DDE1;--hover:#E2E9EC;--accent:#00737E;--accent-ink:#FFFFFF;--primary:#00293A;--primary-ink:#FFFFFF;--warn-bg:#FFF4E5;--warn-ink:#7A4100;--warn-border:#F2C98F;--note-bg:#E6EEF1;--sel:#E1EEF0;--nav:#C7DCE5AE;--signin:#00293A;--signin-ink:#FFFFFF}
+.app[data-theme="dark"]{--bg:#001A25;--surface:#00293A;--side:#00202D;--text:#E6EEF1;--muted:#9DB3BD;--border:#15404F;--hover:#0B3546;--accent:#C4FFFB;--accent-ink:#00202D;--primary:#C4FFFB;--primary-ink:#00202D;--warn-bg:#3A2A10;--warn-ink:#F6CF95;--warn-border:#6B4D1E;--note-bg:#032F40;--sel:#0B3F50;--nav:#010405;--signin:#C4FFFBE3;--signin-ink:#00202D}
+.app{font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.45}
+.app *{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.app a{color:var(--accent)}.app a:hover{color:var(--text)}
+.btn{font:inherit;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.btn.primary:hover{opacity:.9}
+.btn.signin{background:var(--signin);color:var(--signin-ink);border-color:transparent}
+.btn.signin:hover{opacity:.9;background:var(--signin)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--hover)}
+.icon{width:36px;padding:0}
+.seg{display:flex;padding:3px;gap:3px;border-radius:9px;background:var(--side);border:1px solid var(--border)}
+.seg button{flex:1;font:inherit;font-size:13px;font-weight:500;min-height:32px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 0 0 1px var(--border)}
+.proj{display:flex;align-items:center;gap:10px;width:100%;font:inherit;text-align:left;min-height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--text);cursor:pointer}
+.proj:hover{background:var(--hover)}
+.proj.on{background:var(--hover);font-weight:500}
+.handle{flex:0 0 6px;align-self:stretch;border:0;padding:0;background:transparent;cursor:col-resize}
+.handle:hover,.handle:focus-visible{background:var(--border);outline:none}
+.box{position:absolute;border:2px solid #F28C28;background:transparent;padding:0;cursor:pointer;border-radius:3px}
+.box.sel{border-color:#00E0EC;border-width:3px}
+.tag{position:absolute;left:-2px;top:-22px;white-space:nowrap;font:500 11px/18px "JetBrains Mono",monospace;padding:0 6px;border-radius:3px;background:#F28C28;color:#1A1A1A}
+.box.sel .tag{background:#00E0EC}
+.tab{font:inherit;font-size:13px;font-weight:500;min-height:32px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);cursor:pointer}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.field input{font:inherit;min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.field input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 16px;border:1.5px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;color:var(--muted)}
+.drop:hover{border-color:var(--accent);color:var(--text)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+table.det{width:100%;border-collapse:collapse;font-size:13px}
+table.det th{text-align:left;font-weight:500;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.det td{padding:6px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.det tr.sel td{background:var(--sel)}
+.rowbtn{font:500 13px "JetBrains Mono",monospace;min-height:28px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.src{font-size:11px;color:var(--muted)}
+input[type=range]{accent-color:var(--accent);width:160px}
+.sec-title{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0}
+.scroll{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+@media (max-width:820px){.app{height:auto !important;overflow:visible !important;flex-wrap:wrap !important}.scroll{overflow:visible !important}.panel{width:100% !important;flex-basis:100% !important}.handle{display:none}}
+</style>
+</helmet>
+<div class="app" data-theme="{{theme}}" style="display: flex; flex-wrap: nowrap; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text)">
+
+<sc-if value="{{leftOpen}}" hint-placeholder-val="{{ true }}">
+<nav class="panel scroll" aria-label="Projects" style="width: {{leftW}}px; flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column; gap: 16px; padding: 14px 12px; border-right: 1px solid var(--border); background: var(--nav)">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<div style="display: flex; align-items: center; gap: 10px; padding-left: 4px">
+<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true" style="fill: none; stroke: var(--accent); stroke-width: 2px; stroke-linecap: round"><path d="M3 20 Q13 2 23 20"></path><path d="M7 20 Q13 9 19 20"></path><path d="M11 20 Q13 16 15 20"></path></svg>
+<div style="display: flex; flex-direction: column; line-height: 1.15">
+<span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">GPRadar</span>
+<a href="https://github.com/hectorvh" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); text-decoration: none">by <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="fill: currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>hectorvh</a>
+</div>
+</div>
+<button class="btn ghost icon" aria-label="Hide project menu" onClick="{{toggleLeft}}"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg></button>
+</div>
+<button class="btn" style="justify-content: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2px"><path d="M12 5v14M5 12h14"></path></svg>New analysis</button>
+<div class="field">
+<label for="psearch" class="sr">Search projects</label>
+<input id="psearch" type="search" placeholder="Search projects">
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px; flex: 1">
+<p class="sec-title" style="padding: 4px 10px">Samples</p>
+<sc-for list="{{projects}}" as="p" hint-placeholder-count="2">
+<button class="{{p.cls}}" onClick="{{p.pick}}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: var(--muted); stroke-width: 1.8px; flex: 0 0 auto"><path d="M3 17 Q12 3 21 17"></path><path d="M3 21h18"></path></svg><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{p.name}}</span></button>
+</sc-for>
+<p class="sec-title" style="padding: 14px 10px 4px">Your projects</p>
+<p style="margin: 0; padding: 0 10px; font-size: 13px; color: var(--muted)">Sign in to save analyses and find them here.</p>
+</div>
+<aside role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: var(--note-bg); border: 1px solid var(--border); font-size: 12px; line-height: 1.45">
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="flex: 0 0 auto; margin-top: 1px; fill: none; stroke: var(--accent); stroke-width: 1.8px"><path d="M12 3 2 20h20L12 3z"></path><path d="M12 10v4M12 17v.5"></path></svg>
+<p style="margin: 0"><strong>Prototype detector.</strong> Detections can be missed or false, accuracy drops on data unlike the training set (gprMax synthetic + Mendeley utilities scans), and depths assume a single constant velocity. Verify results independently before any excavation or engineering decision.</p>
+</aside>
+<button class="btn signin" style="min-height: 40px; width: 100%"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>Sign in</button>
+</nav>
+<button class="handle" aria-label="Resize project menu (arrow keys)" onPointerDown="{{dragLeft}}" onKeyDown="{{keyLeft}}"></button>
+</sc-if>
+
+<main style="flex: 999 1 560px; min-width: 0; min-height: 0; display: flex; flex-direction: column">
+<header style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 60px; padding: 10px 20px; border-bottom: 1px solid var(--border)">
+<sc-if value="{{leftClosed}}" hint-placeholder-val="{{ false }}">
+<button class="btn ghost icon" aria-label="Show project menu" onClick="{{toggleLeft}}"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg></button>
+</sc-if>
+<div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1">
+<h1 style="margin: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{sampleName}}</h1>
+<span class="chip">{{kindLabel}}</span>
+</div>
+<a class="btn ghost icon" href="https://github.com/hectorvh/GPRadar#readme" target="_blank" rel="noopener" aria-label="About GPRadar (README)" title="About · README"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg></a>
+<button class="btn ghost" aria-pressed="{{isDark}}" onClick="{{toggleTheme}}" aria-label="Dark mode">
+<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>
+<span style="display: inline-flex; width: 34px; height: 20px; border-radius: 999px; background: var(--border); padding: 2px; justify-content: {{knob}}"><span style="width: 16px; height: 16px; border-radius: 999px; background: var(--accent)"></span></span>
+</button>
+<button class="btn ghost icon" aria-label="{{rightToggleLabel}}" onClick="{{toggleRight}}"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M15 4v16"></path></svg></button>
+</header>
+
+<div class="scroll" style="flex: 1; min-height: 0">
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 20px; max-width: 1200px; width: 100%; margin: 0 auto">
+
+<section aria-label="Radargram viewer" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 6px 16px; border-bottom: 1px solid var(--border)">
+<div role="tablist" aria-label="View" style="display: flex; gap: 4px">
+<sc-if value="{{modeFull}}" hint-placeholder-val="{{ true }}">
+<button role="tab" class="{{tabRawCls}}" aria-selected="{{isRaw}}" onClick="{{showRaw}}">Raw</button>
+<button role="tab" class="{{tabProcCls}}" aria-selected="{{isProc}}" onClick="{{showProc}}">Processed</button>
+</sc-if>
+<sc-if value="{{modeDet}}" hint-placeholder-val="{{ false }}">
+<button role="tab" class="tab on" aria-selected="true">Input</button>
+</sc-if>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<label for="thr" style="font-size: 13px; color: var(--muted)">Confidence ≥</label>
+<input id="thr" type="range" min="0" max="1" step="0.05" value="{{thr}}" onChange="{{setThr}}">
+<span class="mono" style="font-size: 13px; width: 36px">{{thrLabel}}</span>
+<span class="chip">{{shownLabel}}</span>
+</div>
+</div>
+
+<figure style="margin: 0; padding: 16px 56px 40px 56px; position: relative">
+<div style="position: relative">
+<div style="position: relative; aspect-ratio: 2 / 1; border-radius: 4px; overflow: hidden">
+<svg viewBox="0 0 1000 500" preserveAspectRatio="none" role="img" aria-label="B-scan radargram" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
+<defs><linearGradient id="att" x1="0" y1="0" x2="0" y2="1"><stop offset="0.35" style="stop-color: #7d7d7d; stop-opacity: 0"></stop><stop offset="1" style="stop-color: #7d7d7d; stop-opacity: 1"></stop></linearGradient></defs>
+<rect x="0" y="0" width="1000" height="500" fill="#7d7d7d"></rect>
+<sc-for list="{{noise}}" as="n" hint-placeholder-count="0">
+<rect x="0" y="{{n.y}}" width="1000" height="3" fill="{{n.c}}" opacity="{{n.o}}"></rect>
+</sc-for>
+<sc-for list="{{layers}}" as="l" hint-placeholder-count="0">
+<path d="{{l.d}}" style="fill: none; stroke: {{l.c}}; stroke-width: 4px; opacity: {{l.o}}"></path>
+</sc-for>
+<g opacity="{{directOp}}"><rect x="0" y="6" width="1000" height="7" fill="#151515"></rect><rect x="0" y="13" width="1000" height="7" fill="#f2f2f2"></rect><rect x="0" y="20" width="1000" height="7" fill="#151515"></rect><rect x="0" y="27" width="1000" height="5" fill="#d8d8d8"></rect></g>
+<sc-for list="{{hyps}}" as="h" hint-placeholder-count="0">
+<path d="{{h.d}}" style="fill: none; stroke: {{h.c}}; stroke-width: 4px; opacity: {{h.o}}"></path>
+</sc-for>
+<rect x="0" y="0" width="1000" height="500" fill="url(#att)" opacity="{{attOp}}"></rect>
+</svg>
+<sc-for list="{{boxes}}" as="b" hint-placeholder-count="0">
+<button class="{{b.cls}}" style="left: {{b.l}}%; top: {{b.t}}%; width: {{b.w}}%; height: {{b.h}}%" aria-label="{{b.aria}}" onClick="{{b.pick}}"><span class="tag">{{b.tag}}</span></button>
+</sc-for>
+</div>
+<sc-for list="{{yticks}}" as="t" hint-placeholder-count="0">
+<span class="mono" style="position: absolute; left: -44px; top: {{t.p}}%; transform: translateY(-50%); font-size: 11px; color: var(--muted); width: 36px; text-align: right">{{t.v}}</span>
+</sc-for>
+<sc-for list="{{dticks}}" as="t" hint-placeholder-count="0">
+<span class="mono" style="position: absolute; right: -44px; top: {{t.p}}%; transform: translateY(-50%); font-size: 11px; color: var(--muted); width: 36px">{{t.v}}</span>
+</sc-for>
+<sc-for list="{{xticks}}" as="t" hint-placeholder-count="0">
+<span class="mono" style="position: absolute; bottom: -20px; left: {{t.p}}%; transform: translateX(-50%); font-size: 11px; color: var(--muted)">{{t.v}}</span>
+</sc-for>
+</div>
+<figcaption style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 26px; font-size: 12px; color: var(--muted)">
+<span>↕ Two-way time (ns)</span><span>→ Distance (m)</span><span>Depth (m) at v = 0.10 m/ns, default ↕</span>
+</figcaption>
+</figure>
+</section>
+
+<section aria-label="Detections" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--border)">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Detections <span style="color: var(--muted); font-weight: 400">· {{shownLabel}}</span></h2>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button class="btn"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>CSV</button>
+<button class="btn"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Annotated PNG</button>
+</div>
+</div>
+<div style="overflow-x: auto">
+<table class="det">
+<thead><tr><th scope="col">ID</th><th scope="col">Confidence</th><th scope="col">Apex distance (m)</th><th scope="col">Apex TWT (ns)</th><th scope="col">Est. depth (m)</th><th scope="col">Box (px)</th></tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+<tr class="{{r.cls}}">
+<td><button class="rowbtn" onClick="{{r.pick}}" aria-label="{{r.aria}}">#{{r.id}}</button></td>
+<td><span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 60px; height: 6px; border-radius: 3px; background: var(--border); display: inline-block; overflow: hidden"><span style="display: block; height: 6px; width: {{r.pct}}%; background: var(--accent)"></span></span><span class="mono">{{r.conf}}</span></span></td>
+<td class="mono">{{r.dist}}</td><td class="mono">{{r.twt}}</td><td class="mono">≈ {{r.depth}}</td><td class="mono" style="color: var(--muted)">{{r.box}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<sc-if value="{{noneShown}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; padding: 16px; color: var(--muted); font-size: 13px">No detections above this confidence. Lower the threshold to see more.</p>
+</sc-if>
+</section>
+
+<footer style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 2px 4px; font-size: 12px; color: var(--muted)">
+<span>GPRadar is open source · <a href="https://github.com/hectorvh/GPRadar/blob/main/LICENSE" target="_blank" rel="noopener">License</a></span>
+<span style="display: flex; gap: 16px"><a href="https://github.com/hectorvh/GPRadar" target="_blank" rel="noopener">GitHub repository</a><a href="#" target="_blank" rel="noopener">LinkedIn</a></span>
+</footer>
+</div>
+</div>
+</main>
+
+<sc-if value="{{rightOpen}}" hint-placeholder-val="{{ true }}">
+<button class="handle" aria-label="Resize input panel (arrow keys)" onPointerDown="{{dragRight}}" onKeyDown="{{keyRight}}"></button>
+<aside class="panel scroll" aria-label="Input and processing" style="width: {{rightW}}px; flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column; gap: 20px; padding: 18px 16px; background: var(--side); border-left: 1px solid var(--border)">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p class="sec-title">1 · Input</p>
+<label class="drop" for="upload">
+<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 1.8px"><path d="M12 16V5M7 10l5-5 5 5M5 19h14"></path></svg>
+<span style="font-weight: 500; color: var(--text)">Drop a B-scan or browse</span>
+<span style="font-size: 12px">Raw (.DZT, .DT1, .rd3, .out) or PNG / JPG</span>
+</label>
+<input id="upload" class="sr" type="file" accept=".dzt,.dt1,.hd,.rd3,.rad,.out,.h5,.png,.jpg,.jpeg" onChange="{{onFile}}">
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+<span style="font-size: 12px; color: var(--muted)">Try a sample:</span>
+<button class="btn" style="min-height: 32px; padding: 0 10px; font-size: 13px" onClick="{{tryGprmax}}">gprMax</button>
+<button class="btn" style="min-height: 32px; padding: 0 10px; font-size: 13px" onClick="{{tryMendeley}}">Mendeley</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p class="sec-title">2 · Processing</p>
+<div class="seg" role="group" aria-label="Processing mode">
+<button class="{{fullCls}}" aria-pressed="{{modeFull}}" onClick="{{setFull}}">Full pipeline</button>
+<button class="{{detCls}}" aria-pressed="{{modeDet}}" onClick="{{setDet}}">Detector only</button>
+</div>
+<p style="margin: 0; font-size: 12px; color: var(--muted)">{{modeHelp}}</p>
+<sc-if value="{{showWarn}}" hint-placeholder-val="{{ false }}">
+<p role="alert" style="margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-border); font-size: 12px">This looks like an image. Preprocessing an already processed image can degrade detection.</p>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button class="btn ghost" style="justify-content: space-between; padding: 0 4px" aria-expanded="{{metaOpen}}" onClick="{{toggleMeta}}"><span class="sec-title">3 · Metadata <span style="text-transform: none; letter-spacing: 0; font-weight: 400">(optional)</span></span><span aria-hidden="true">{{metaArrow}}</span></button>
+<sc-if value="{{metaOpen}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div class="field"><label for="m1">Frequency (MHz) <span class="src">default</span></label><input id="m1" inputmode="decimal" placeholder="400"></div>
+<div class="field"><label for="m2">Time window (ns) <span class="src">file</span></label><input id="m2" inputmode="decimal" placeholder="60"></div>
+<div class="field"><label for="m3">Trace spacing (m) <span class="src">file</span></label><input id="m3" inputmode="decimal" placeholder="0.02"></div>
+<div class="field"><label for="m4">Velocity (m/ns) <span class="src">default</span></label><input id="m4" inputmode="decimal" placeholder="0.10"></div>
+</div>
+<p style="margin: 0; font-size: 12px; color: var(--muted)">Leave blank to use values from the file header or defaults. Your input overrides both.</p>
+</sc-if>
+</div>
+
+<button class="btn primary" style="min-height: 44px; font-size: 15px" onClick="{{run}}">{{runLabel}}</button>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px">
+<p class="sec-title">Run info</p>
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: var(--muted)">Mode</span><span>{{modeName}}</span></div>
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: var(--muted)">Model</span><span class="mono">YOLO · [version]</span></div>
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: var(--muted)">Source</span><span style="text-align: right">{{fileLabel}}</span></div>
+</div>
+</aside>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startTheme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { theme: null, leftOpen: true, rightOpen: true, leftW: 260, rightW: 340, mode: 'full', view: 'proc', sample: 'gprmax', kind: 'raw', fileName: null, thr: 0.5, sel: 1, metaOpen: true, running: false };
+    this.drag = null;
+    this.onMove = (e) => {
+      if (!this.drag) return;
+      const dx = e.clientX - this.drag.x;
+      if (this.drag.side === 'left') this.setState({ leftW: Math.max(200, Math.min(420, this.drag.w + dx)) });
+      else this.setState({ rightW: Math.max(280, Math.min(520, this.drag.w - dx)) });
+    };
+    this.onUp = () => { this.drag = null; };
+  }
+  componentDidMount() {
+    window.addEventListener('pointermove', this.onMove);
+    window.addEventListener('pointerup', this.onUp);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onUp);
+    clearTimeout(this.t);
+  }
+  samples() {
+    return {
+      gprmax: { name: 'gprMax · 400 MHz synthetic', kind: 'Raw · .out', seed: 11,
+        targets: [[200, 150, 0.94], [430, 235, 0.88], [690, 175, 0.71], [870, 320, 0.46]],
+        layers: ['M0 300 C250 290 500 315 1000 300', 'M0 420 C300 410 700 435 1000 425'] },
+      mendeley: { name: 'Mendeley · utilities and voids', kind: 'Real scan', seed: 29,
+        targets: [[260, 120, 0.81], [560, 200, 0.63], [800, 140, 0.38]],
+        layers: ['M0 250 C200 270 600 230 1000 260', 'M0 380 C250 360 650 400 1000 375'] }
+    };
+  }
+  hyp(x0, y0, off) {
+    let d = '';
+    for (let dx = -170; dx <= 170; dx += 10) {
+      const y = y0 + off + 0.9 * (Math.sqrt(3600 + dx * dx) - 60);
+      d += (dx === -170 ? 'M' : 'L') + (x0 + dx) + ' ' + y.toFixed(1) + ' ';
+    }
+    return d;
+  }
+  renderVals() {
+    const s = this.state;
+    const theme = s.theme || this.props.startTheme || 'light';
+    const smp = this.samples()[s.sample];
+    const full = s.mode === 'full';
+    const proc = !full || s.view === 'proc';
+    let seed = smp.seed;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const noise = [];
+    for (let i = 0; i < 110; i++) noise.push({ y: (i * 4.6 + rnd() * 2).toFixed(1), c: rnd() > 0.5 ? '#000' : '#fff', o: ((proc ? 0.02 : 0.05) + rnd() * (proc ? 0.06 : 0.12)).toFixed(3) });
+    const layers = [];
+    smp.layers.forEach((d) => { layers.push({ d, c: '#202020', o: proc ? 0.35 : 0.6 }); });
+    const hyps = [];
+    smp.targets.forEach(([x, y]) => {
+      [[0, '#141414'], [7, '#f0f0f0'], [14, '#141414']].forEach(([off, c]) => hyps.push({ d: this.hyp(x, y, off), c, o: proc ? 0.95 : (y > 200 ? 0.25 : 0.5) }));
+    });
+    const dets = smp.targets.map(([x, y, c], i) => ({ id: i + 1, x, y, c }));
+    const shown = dets.filter((d) => d.c >= s.thr);
+    const boxes = shown.map((d) => ({
+      l: ((d.x - 130) / 10).toFixed(2), t: ((d.y - 14) / 5).toFixed(2), w: 26, h: 21,
+      cls: 'box' + (s.sel === d.id ? ' sel' : ''), tag: '#' + d.id + ' ' + d.c.toFixed(2),
+      aria: 'Detection ' + d.id + ', confidence ' + d.c.toFixed(2), pick: () => this.setState({ sel: d.id })
+    }));
+    const rows = shown.map((d) => {
+      const twt = d.y / 500 * 60;
+      return { id: d.id, conf: d.c.toFixed(2), pct: Math.round(d.c * 100), dist: (d.x / 100).toFixed(2), twt: twt.toFixed(1), depth: (twt * 0.05).toFixed(2),
+        box: (d.x - 130) + '–' + (d.x + 130) + ', ' + (d.y - 14) + '–' + (d.y + 91),
+        cls: s.sel === d.id ? 'sel' : '', aria: 'Select detection ' + d.id, pick: () => this.setState({ sel: d.id }) };
+    });
+    const projects = [['gprmax', 'gprMax · 400 MHz synthetic'], ['mendeley', 'Mendeley · utilities and voids']].map(([k, n]) => ({
+      name: n, cls: 'proj' + (s.sample === k && !s.fileName ? ' on' : ''), pick: () => this.pickSample(k)
+    }));
+    return {
+      theme, isDark: theme === 'dark' ? 'true' : 'false', knob: theme === 'dark' ? 'flex-end' : 'flex-start',
+      leftOpen: s.leftOpen, leftClosed: !s.leftOpen, rightOpen: s.rightOpen, leftW: s.leftW, rightW: s.rightW,
+      rightToggleLabel: s.rightOpen ? 'Hide input panel' : 'Show input panel',
+      sampleName: s.fileName || smp.name, kindLabel: s.fileName ? (s.kind === 'image' ? 'Image' : 'Raw file') : smp.kind,
+      fileLabel: s.fileName ? 'Upload' : 'Bundled sample',
+      projects, noise, layers, hyps, boxes, rows,
+      directOp: proc ? 0.12 : 1, attOp: proc ? 0.1 : 0.85,
+      modeFull: full, modeDet: !full, fullCls: full ? 'on' : '', detCls: full ? '' : 'on',
+      modeName: full ? 'Full pipeline' : 'Detector only',
+      modeHelp: full ? 'Time-zero, dewow, background removal and gain, then detection. For raw data.' : 'Only resizes and normalizes for the model. For already processed images.',
+      showWarn: full && s.kind === 'image',
+      tabRawCls: 'tab' + (proc ? '' : ' on'), tabProcCls: 'tab' + (proc ? ' on' : ''), isRaw: proc ? 'false' : 'true', isProc: proc ? 'true' : 'false',
+      thr: s.thr, thrLabel: s.thr.toFixed(2), shownLabel: shown.length + ' of ' + dets.length + ' shown', noneShown: shown.length === 0,
+      xticks: [0, 2, 4, 6, 8, 10].map((v) => ({ v, p: v * 10 })),
+      yticks: [0, 10, 20, 30, 40, 50, 60].map((v) => ({ v, p: (v / 60 * 100).toFixed(2) })),
+      dticks: [0, 0.5, 1, 1.5, 2, 2.5, 3].map((v) => ({ v: v.toFixed(1), p: (v / 3 * 100).toFixed(2) })),
+      metaOpen: s.metaOpen, metaArrow: s.metaOpen ? '−' : '+',
+      runLabel: s.running ? 'Running…' : 'Run detection',
+      toggleLeft: () => this.setState({ leftOpen: !s.leftOpen }),
+      toggleRight: () => this.setState({ rightOpen: !s.rightOpen }),
+      toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      toggleMeta: () => this.setState({ metaOpen: !s.metaOpen }),
+      showRaw: () => this.setState({ view: 'raw' }), showProc: () => this.setState({ view: 'proc' }),
+      setFull: () => this.setState({ mode: 'full' }), setDet: () => this.setState({ mode: 'det' }),
+      setThr: (e) => this.setState({ thr: parseFloat(e.target.value) }),
+      tryGprmax: () => this.pickSample('gprmax'), tryMendeley: () => this.pickSample('mendeley'),
+      onFile: (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const img = /\.(png|jpe?g)$/i.test(f.name);
+        this.setState({ fileName: f.name, kind: img ? 'image' : 'raw', mode: img ? 'det' : 'full' });
+      },
+      run: () => { this.setState({ running: true }); clearTimeout(this.t); this.t = setTimeout(() => this.setState({ running: false }), 900); },
+      dragLeft: (e) => { this.drag = { side: 'left', x: e.clientX, w: s.leftW }; },
+      dragRight: (e) => { this.drag = { side: 'right', x: e.clientX, w: s.rightW }; },
+      keyLeft: (e) => { if (e.key === 'ArrowLeft') this.setState({ leftW: Math.max(200, s.leftW - 20) }); if (e.key === 'ArrowRight') this.setState({ leftW: Math.min(420, s.leftW + 20) }); },
+      keyRight: (e) => { if (e.key === 'ArrowLeft') this.setState({ rightW: Math.min(520, s.rightW + 20) }); if (e.key === 'ArrowRight') this.setState({ rightW: Math.max(280, s.rightW - 20) }); }
+    };
+  }
+  pickSample(k) {
+    this.setState({ sample: k, fileName: null, kind: 'raw', mode: 'full', view: 'proc', sel: 1 });
+  }
+}
+</script>
+</body>
+</html>
