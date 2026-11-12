@@ -1,0 +1,21 @@
+/* Design tokens, copied exactly from design/Main.dc.html (.app[data-theme]). */
+:root[data-theme="light"] {
+  --bg:#F5F7F8; --surface:#FFFFFF; --side:#EDF1F3; --text:#00293A; --muted:#4A5F69;
+  --border:#D4DDE1; --hover:#E2E9EC; --accent:#00737E; --accent-ink:#FFFFFF;
+  --primary:#00293A; --primary-ink:#FFFFFF; --warn-bg:#FFF4E5; --warn-ink:#7A4100;
+  --warn-border:#F2C98F; --note-bg:#E6EEF1; --sel:#E1EEF0; --nav:#C7DCE5AE;
+  --signin:#00293A; --signin-ink:#FFFFFF;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg:#001A25; --surface:#00293A; --side:#00202D; --text:#E6EEF1; --muted:#9DB3BD;
+  --border:#15404F; --hover:#0B3546; --accent:#C4FFFB; --accent-ink:#00202D;
+  --primary:#C4FFFB; --primary-ink:#00202D; --warn-bg:#3A2A10; --warn-ink:#F6CF95;
+  --warn-border:#6B4D1E; --note-bg:#032F40; --sel:#0B3F50; --nav:#010405;
+  --signin:#C4FFFBE3; --signin-ink:#00202D;
+  color-scheme: dark;
+}
+/* detection boxes (both themes) */
+:root {
+  --box:#F28C28; --box-selected:#00E0EC; --box-label-ink:#1A1A1A;
+}
