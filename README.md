@@ -1,132 +1,70 @@
 # GPRadar-UI
 
-Web frontend for **GPRadar**, a prototype that finds hyperbolas (buried pipes,
-cables, voids) in ground-penetrating radar B-scans with a YOLO model.
+Web interface for **GPRadar**, a prototype that detects hyperbolas (buried
+pipes, cables, voids) in ground-penetrating radar B-scans with a YOLO model.
 
-Upload a gprMax output file (`.out`, `.h5`) or a PNG/JPG B-scan, or pick a
-bundled sample. [GPRadar-API](https://github.com/hectorvh/GPRadar-API) runs
-the preprocessing and the detector, and this app shows the radargram with
-boxes, axes (time, distance, approximate depth) and a detections table. The
-confidence threshold filters in the browser. CSV and annotated-PNG exports are
-also made in the browser, so the free backend does less work.
+Pick a bundled sample or upload a B-scan (PNG/JPG) or a gprMax output file
+(`.out`, `.h5`). The app sends it to
+[GPRadar-API](https://github.com/hectorvh/GPRadar-API), then shows the
+radargram with detection boxes, axes and a detections table. You can filter
+detections by confidence and export them as CSV or as an annotated PNG.
 
-It is a static Vite + React + TypeScript app. The browser talks to the API
-directly; there is no server of its own, no accounts and no tracking.
+It is a static Vite + React + TypeScript app with no backend of its own.
 
-> **Prototype.** Detections can be missed or false, and depths assume one
-> constant velocity. Verify results independently before any excavation or
-> engineering decision.
+> **Prototype.** Detections can be missed or wrong, and depths are
+> approximate. Do not rely on them for excavation or engineering decisions.
 
-## Related projects
+## How to run
 
-| | |
-| --- | --- |
-| [GPRadar](https://github.com/hectorvh/GPRadar) | Research code: data, training, evaluation |
-| [GPRadar-API](https://github.com/hectorvh/GPRadar-API) | Detector service this app calls (FastAPI + ONNX Runtime). **AGPL-3.0** |
-| [hectorvh/gpradar-hyperbola-yolo](https://huggingface.co/hectorvh/gpradar-hyperbola-yolo) | The YOLO model on Hugging Face |
+You need **Node.js 22** and a running **GPRadar-API**.
 
-## Run locally against a local API
+1. **Start the API** on `http://localhost:8000` by following the
+   [GPRadar-API README](https://github.com/hectorvh/GPRadar-API). By default
+   the API accepts requests from `http://localhost:5173`.
 
-Requirements: Node.js 22 and a running GPRadar-API.
-
-1. Start GPRadar-API on port 8000 (see its README for the model download).
-   The API allows `http://localhost:5173` by default (`ALLOWED_ORIGINS`).
-2. In this repository:
+2. **Start the interface:**
 
    ```sh
    npm install
-   cp .env.example .env.local   # VITE_API_URL=http://localhost:8000
-   npm run dev                  # http://localhost:5173
+   cp .env.example .env.local   # sets VITE_API_URL=http://localhost:8000
+   npm run dev
    ```
 
-On load the app calls `GET /health` (it waits up to 75 s, because a sleeping
-free host can take that long to wake), then `GET /samples`. Clicking a sample
-runs it. Uploaded files are checked in the browser (extension, size, magic
-bytes) before they are sent.
+3. **Open** <http://localhost:5173> and click a sample in the left menu.
 
-### Configuration
+If the API runs somewhere else, change `VITE_API_URL` in `.env.local`. This
+value ends up in the public JavaScript, so never put secrets in it.
 
-| Variable | Used at | Example |
-| --- | --- | --- |
-| `VITE_API_URL` | **build time** (and `npm run dev`) | `http://localhost:8000`, `https://gpradar-api.onrender.com` |
+## Other commands
 
-Vite inlines `VITE_*` variables into the public JavaScript bundle. **Never
-put secrets in them.** The API URL is public by design.
-
-If `VITE_API_URL` is unset, `npm run build` warns and falls back to
-`http://localhost:8000`. On Netlify, where `NETLIFY=true`, the build fails
-instead, so a broken deploy cannot go out.
-
-## Scripts
-
-| | |
+| Command | What it does |
 | --- | --- |
-| `npm run dev` | Dev server with hot reload on port 5173 |
-| `npm run build` | Type-check (`tsc -b`) and build to `dist/` |
-| `npm run preview` | Serve `dist/` locally on port 4173 |
-| `npm test` | Vitest: CSV export, file validation, threshold filtering, box geometry, CSP generation |
-| `npm run lint` | ESLint (also rejects `dangerouslySetInnerHTML`) |
+| `npm test` | Run the unit tests |
+| `npm run lint` | Check the code with ESLint |
+| `npm run build` | Build the static site into `dist/` |
+| `npm run preview` | Serve the built site on <http://localhost:4173> |
 
-## Build
+To build for a deployed API, set the URL at build time:
 
 ```sh
 VITE_API_URL=https://your-api.example.org npm run build
 ```
 
-The build writes static files to `dist/`. Hashed assets go in `dist/assets/`.
-Fonts (Inter, JetBrains Mono) are self-hosted from the fontsource packages,
-so there are no requests to Google Fonts or any other third party.
+## Deploying to Netlify
 
-The build also writes `dist/_headers` with the Content-Security-Policy (see
-below).
+`netlify.toml` already holds the build settings. In the Netlify site
+settings, set `VITE_API_URL` to the API's public URL. On the API side, add
+the Netlify address to `ALLOWED_ORIGINS`. The build also writes the
+Content-Security-Policy to `dist/_headers`.
 
-## Deploy on Netlify
+## Related projects
 
-1. Create a site from this repository. Netlify reads `netlify.toml`: it runs
-   `npm run build` on Node 22 and publishes `dist`.
-2. Under **Site configuration → Environment variables**, set `VITE_API_URL`
-   to the API's public URL (Render in v1.1, Cloud Run in v1.2).
-3. On the API side, add the Netlify origin (e.g. `https://gpradar.netlify.app`)
-   to `ALLOWED_ORIGINS`, or the browser will block the requests (CORS).
-4. Changing `VITE_API_URL` needs a new deploy, because the value is baked in
-   at build time.
-
-### Security headers
-
-`netlify.toml` sets `X-Content-Type-Options`, `Referrer-Policy`,
-`Permissions-Policy` and long-lived caching for `/assets/*`.
-
-The **Content-Security-Policy** needs two values that change: the API origin
-(for `connect-src`) and the hash of the small inline script in `index.html`
-that sets the theme before React loads, which prevents a light flash in dark
-mode. `netlify.toml` cannot read environment variables, so `build/csp.ts`
-computes both at build time and writes `dist/_headers`. Netlify merges that
-file with `netlify.toml`. If you edit the inline script, the hash updates on
-the next build, and a unit test checks that it matches.
-
-## Project layout
-
-```
-src/
-  App.tsx              layout: LeftNav | handle | Main | handle | InputPanel
-  styles/              tokens.css (light/dark variables), base.css (components)
-  components/          LeftNav, TopBar, Viewer, BoxOverlay, Axes, DetectionsTable,
-                       InputPanel, UploadDrop, ModeToggle, MetadataForm,
-                       StatusBanner, ResizeHandle, Footer
-  hooks/               useTheme, usePanels, useBackend, useRun
-  lib/                 api, types (= API contract), csv, exportPng, validate,
-                       detections, metadata, format
-build/csp.ts           CSP → dist/_headers
-design/                the original design mockup (reference only, not shipped)
-```
-
-`design/` holds the mockup the UI was built from. See
-[design/README.md](design/README.md). The build does not include it.
+- [GPRadar](https://github.com/hectorvh/GPRadar): research code, data and training
+- [GPRadar-API](https://github.com/hectorvh/GPRadar-API): the detector service (AGPL-3.0)
+- [gpradar-hyperbola-yolo](https://huggingface.co/hectorvh/gpradar-hyperbola-yolo): the model on Hugging Face
 
 ## Licence
 
-The frontend is [MIT](LICENSE). The API it talks to,
-[GPRadar-API](https://github.com/hectorvh/GPRadar-API), is AGPL-3.0.
-Real-scan samples come from Mojahid et al. (2025), Mendeley Data,
-[DOI 10.17632/ww7fd9t325.1](https://doi.org/10.17632/ww7fd9t325.1) (CC BY 4.0).
-The synthetic samples were simulated with gprMax (Warren et al. 2016).
+MIT. See [LICENSE](LICENSE). Real-scan samples come from Mojahid et al. (2025),
+Mendeley Data, [DOI 10.17632/ww7fd9t325.1](https://doi.org/10.17632/ww7fd9t325.1)
+(CC BY 4.0).
