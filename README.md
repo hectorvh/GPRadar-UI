@@ -1,5 +1,14 @@
 # GPRadar-UI
 
+[![License](https://img.shields.io/github/license/hectorvh/GPRadar-UI)](https://github.com/hectorvh/GPRadar-UI/blob/main/LICENSE)
+[![Live demo](https://img.shields.io/website?url=https%3A%2F%2Fgpradar.hectorvh.com&label=live%20demo&up_message=online&down_message=offline)](https://gpradar.hectorvh.com)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node 22](https://img.shields.io/badge/node-22-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Last commit](https://img.shields.io/github/last-commit/hectorvh/GPRadar-UI)](https://github.com/hectorvh/GPRadar-UI/commits/main)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24339830.svg)](https://doi.org/10.5281/zenodo.24339830)
+
 Web interface for **GPRadar**, a prototype that detects hyperbolas (buried
 pipes, cables, voids) in ground-penetrating radar B-scans with a YOLO model.
 
