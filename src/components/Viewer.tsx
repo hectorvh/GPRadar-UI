@@ -20,6 +20,11 @@ interface Props {
   scrollToId: number | null
   onSelect: (id: number) => void
   placeholder: string
+  /** A run is in progress: animate the placeholder. */
+  busy: boolean
+  /** Set when an input is chosen but not run yet: shows a Run button in the placeholder. */
+  onRun: (() => void) | null
+  canRun: boolean
 }
 
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/
@@ -55,7 +60,12 @@ export function Viewer(p: Props) {
   const velocity = result?.metadata.velocity_m_ns
 
   return (
-    <section aria-label="Radargram viewer" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }}>
+    <section
+      id="viewer"
+      className="viewer"
+      aria-label="Radargram viewer"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }}
+    >
       <div
         style={{
           display: 'flex',
@@ -103,7 +113,7 @@ export function Viewer(p: Props) {
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="viewer-tools" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <label htmlFor="thr" style={{ fontSize: 13, color: 'var(--muted)' }}>
             Confidence ≥
           </label>
@@ -143,8 +153,14 @@ export function Viewer(p: Props) {
                 draggable={false}
               />
             ) : (
-              <div className="placeholder" role="status">
-                {p.placeholder}
+              <div className="placeholder" role="status" style={{ flexDirection: 'column', gap: 12 }}>
+                {p.busy && <span className="spin" aria-hidden="true" style={{ width: 22, height: 22, color: 'var(--accent)' }} />}
+                <span>{p.placeholder}</span>
+                {p.onRun && (
+                  <button type="button" className="btn primary" onClick={p.onRun} disabled={!p.canRun}>
+                    Run detection
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -152,7 +168,15 @@ export function Viewer(p: Props) {
           {axes && <Axes axes={axes} />}
         </div>
         <figcaption
-          style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 26, fontSize: 12, color: 'var(--muted)' }}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginTop: 26,
+            fontSize: 12,
+            color: 'var(--muted)',
+          }}
         >
           {axes ? (
             <>

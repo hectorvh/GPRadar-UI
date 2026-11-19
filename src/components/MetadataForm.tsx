@@ -63,7 +63,7 @@ export function MetadataForm({ open, onToggle, values, onChange, errors, resolve
             })}
           </div>
           <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
-            Leave blank to use values from the file header or defaults. A value in the file header takes precedence over yours.
+            Leave blank to use values from the file header or defaults. A value in the file header takes precedence over yours
           </p>
         </div>
       )}

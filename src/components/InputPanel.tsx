@@ -1,23 +1,19 @@
-import type { SamplesState } from '../hooks/useBackend'
 import type { RunState } from '../hooks/useRun'
 import { duration, shortRev } from '../lib/format'
 import type { MetaStrings } from '../lib/metadata'
-import { shortSampleName, sourceKind, type Source } from '../lib/source'
-import type { MetaField, Mode, Sample } from '../lib/types'
+import { sourceKind, type Source } from '../lib/source'
+import type { InputKind, MetaField, Mode } from '../lib/types'
 import { MetadataForm } from './MetadataForm'
 import { ModeToggle } from './ModeToggle'
-import { UploadDrop } from './UploadDrop'
 
 interface Props {
   width: number
+  /** The chosen input (step 1 lives in the main column); used for mode warnings and Run info. */
   source: Source | null
-  samples: SamplesState
-  onPickSample: (s: Sample) => void
-  onFile: (f: File) => void
-  fileError: string | null
-  checkingFile: boolean
   mode: Mode
   onMode: (m: Mode) => void
+  /** Modes switched on in Settings. */
+  modes: Record<Mode, boolean>
   metaOpen: boolean
   onToggleMeta: () => void
   meta: MetaStrings
@@ -27,6 +23,14 @@ interface Props {
   onRun: () => void
   canRun: boolean
   modelRevision: string | null
+  /** Set in a project's New analysis: several B-scans, one setup for all. */
+  batch?: {
+    count: number
+    /** Kind shared by every selected B-scan, or null when they are mixed. */
+    kind: InputKind | null
+    canRun: boolean
+    onRun: () => void
+  } | null
 }
 
 function runLabel(run: RunState) {
@@ -51,8 +55,8 @@ export function InputPanel(p: Props) {
 
   return (
     <aside
-      className="panel scroll"
-      aria-label="Input and processing"
+      className="panel scroll inputpanel"
+      aria-label="Processing and metadata"
       style={{
         width: p.width,
         flex: '0 0 auto',
@@ -66,30 +70,13 @@ export function InputPanel(p: Props) {
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <p className="sec-title">1 · Input</p>
-        <UploadDrop
-          onFile={p.onFile}
-          fileName={p.source?.type === 'file' ? p.source.file.name : null}
-          error={p.fileError}
-          checking={p.checkingFile}
-        />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>Try a sample:</span>
-          {p.samples.status === 'ok' ? (
-            p.samples.samples.map((s) => (
-              <button key={s.id} type="button" className="btn sm" title={s.name} onClick={() => p.onPickSample(s)}>
-                {shortSampleName(s.name)}
-              </button>
-            ))
-          ) : (
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{p.samples.status === 'error' ? 'unavailable' : 'loading…'}</span>
-          )}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <p className="sec-title">2 · Processing</p>
-        <ModeToggle mode={p.mode} onMode={p.onMode} kind={kind} />
+        <ModeToggle mode={p.mode} onMode={p.onMode} kind={p.batch ? p.batch.kind : kind} modes={p.modes} />
+        {p.batch && (
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
+            Applies to every selected B-scan{p.batch.kind === null && p.batch.count > 1 ? ' (they mix images and raw records)' : ''}
+          </p>
+        )}
       </div>
 
       <MetadataForm
@@ -101,18 +88,31 @@ export function InputPanel(p: Props) {
         resolved={result?.metadata ?? null}
       />
 
-      <button
-        type="button"
-        className="btn primary"
-        style={{ minHeight: 44, fontSize: 15 }}
-        onClick={p.onRun}
-        disabled={!p.canRun || busy}
-        aria-busy={busy}
-        title={p.source ? undefined : 'Choose a file or a sample first'}
-      >
-        {busy && <span className="spin" aria-hidden="true" />}
-        {runLabel(p.run)}
-      </button>
+      {p.batch ? (
+        <button
+          type="button"
+          className="btn primary"
+          style={{ minHeight: 44, fontSize: 15 }}
+          disabled={!p.batch.canRun}
+          onClick={p.batch.onRun}
+        >
+          Run {p.batch.count || ''} B-scan{p.batch.count === 1 ? '' : 's'}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="btn primary"
+          style={{ minHeight: 44, fontSize: 15 }}
+          onClick={p.onRun}
+          disabled={!p.canRun || busy}
+          aria-busy={busy}
+          title={p.source ? 'Run detection (Ctrl + Enter)' : 'Choose a file or a sample first'}
+          aria-keyshortcuts="Control+Enter Meta+Enter"
+        >
+          {busy && <span className="spin" aria-hidden="true" />}
+          {runLabel(p.run)}
+        </button>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 12 }}>
         <p className="sec-title">Run info</p>

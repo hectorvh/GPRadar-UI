@@ -64,11 +64,11 @@ describe('checkNameAndSize', () => {
     expect(checkNameAndSize('a.out', MAX_GPRMAX_BYTES)).toEqual({ ok: true, kind: 'gprmax' })
   })
   it('rejects files over the limit with the limit in the message', () => {
-    expect(checkNameAndSize('a.png', MAX_IMAGE_BYTES + 1)).toEqual({ ok: false, message: 'File too large (max 10 MB).' })
-    expect(checkNameAndSize('a.h5', MAX_GPRMAX_BYTES + 1)).toEqual({ ok: false, message: 'File too large (max 20 MB).' })
+    expect(checkNameAndSize('a.png', MAX_IMAGE_BYTES + 1)).toEqual({ ok: false, message: 'File too large (max 10 MB)' })
+    expect(checkNameAndSize('a.h5', MAX_GPRMAX_BYTES + 1)).toEqual({ ok: false, message: 'File too large (max 20 MB)' })
   })
   it('rejects empty files and unsupported extensions', () => {
-    expect(checkNameAndSize('a.png', 0)).toMatchObject({ ok: false, message: 'The file is empty.' })
+    expect(checkNameAndSize('a.png', 0)).toMatchObject({ ok: false, message: 'The file is empty' })
     expect(checkNameAndSize('a.dzt', 100)).toMatchObject({ ok: false, message: expect.stringContaining('Unsupported file type') })
   })
 })

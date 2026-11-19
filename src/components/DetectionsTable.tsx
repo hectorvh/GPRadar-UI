@@ -54,7 +54,7 @@ export function DetectionsTable({ shown, total, selectedId, scrollToId, onSelect
           </button>
         </div>
       </div>
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', position: 'relative' }}>
         <table className="det">
           <thead>
             <tr>
@@ -94,14 +94,14 @@ export function DetectionsTable({ shown, total, selectedId, scrollToId, onSelect
         </table>
       </div>
       {!hasResult && (
-        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>Run a sample or upload a B-scan to see detections.</p>
+        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>Run a sample or upload a B-scan to see detections</p>
       )}
       {hasResult && total === 0 && (
-        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>No hyperbolas detected in this scan (confidence ≥ 0.05).</p>
+        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>No hyperbolas detected in this scan (confidence ≥ 0.05)</p>
       )}
       {hasResult && total! > 0 && shown.length === 0 && (
         <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>
-          No detections above {threshold.toFixed(2)} confidence. Lower the threshold to see more.
+          No detections above {threshold.toFixed(2)} confidence. Lower the threshold to see more
         </p>
       )}
     </section>

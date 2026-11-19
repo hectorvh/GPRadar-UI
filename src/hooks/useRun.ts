@@ -23,24 +23,24 @@ const BUSY_RETRY_MS = 3_000
 export function errorMessage(code: ErrorCode, serverMessage: string, kind: InputKind | null): string {
   switch (code) {
     case 'too_large':
-      return `File too large (max ${megabytes(maxBytes(kind ?? 'gprmax'))}).`
+      return `File too large (max ${megabytes(maxBytes(kind ?? 'gprmax'))})`
     case 'unsupported_type':
-      return 'Unsupported file type. Use PNG, JPG or gprMax output (.out, .h5).'
+      return 'Unsupported file type. Use PNG, JPG or gprMax output (.out, .h5)'
     case 'rate_limited':
-      return 'Too many runs, try again in a minute.'
+      return 'Too many runs, try again in a minute'
     case 'busy':
-      return 'Server busy, try again in a few seconds.'
+      return 'Server busy, try again in a few seconds'
     case 'timeout':
     case 'client_timeout':
-      return 'Took too long; try a smaller file.'
+      return 'Took too long; try a smaller file'
     case 'invalid_metadata':
-      return `Invalid metadata: ${serverMessage}.`
+      return `Invalid metadata: ${serverMessage}`
     case 'bad_request':
-      return `The server could not process this input: ${serverMessage}.`
+      return `The server could not process this input: ${serverMessage}`
     case 'network':
-      return 'Could not reach the detector server. Check your connection and try again.'
+      return 'Could not reach the detector server. Check your connection and try again'
     default:
-      return 'Something went wrong on the server. Try again.'
+      return 'Something went wrong on the server. Try again'
   }
 }
 
@@ -58,8 +58,13 @@ const delay = (ms: number, signal: AbortSignal) =>
  * A new run aborts the previous one. Runs requested before the backend is
  * awake are queued and start when `ready` turns true.
  */
-export function useRun(ready: boolean) {
+export function useRun(ready: boolean, onDone?: (result: RunResponse) => void) {
   const [state, setState] = useState<RunState>(INITIAL)
+  // Latest callback, so start() does not need to change when it does.
+  const doneRef = useRef(onDone)
+  useEffect(() => {
+    doneRef.current = onDone
+  }, [onDone])
   const controller = useRef<AbortController | null>(null)
   const pending = useRef<{ req: RunRequest; kind: InputKind | null } | null>(null)
 
@@ -91,6 +96,7 @@ export function useRun(ready: boolean) {
       }
       if (signal.aborted) return
       setState({ ...INITIAL, status: 'done', result })
+      doneRef.current?.(result)
     } catch (e) {
       if (signal.aborted) return
       const err = e instanceof ApiError ? e : new ApiError(0, 'internal_error', String(e))
@@ -127,7 +133,15 @@ export function useRun(ready: boolean) {
     setState(INITIAL)
   }, [])
 
+  /** Show a stored result (an opened project) without calling the API. */
+  const show = useCallback((result: RunResponse) => {
+    controller.current?.abort()
+    controller.current = null
+    pending.current = null
+    setState({ ...INITIAL, status: 'done', result })
+  }, [])
+
   useEffect(() => () => controller.current?.abort(), [])
 
-  return { ...state, run, reset }
+  return { ...state, run, reset, show }
 }
