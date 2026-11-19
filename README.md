@@ -4,6 +4,10 @@
 
 # GPRadar-UI
 
+> This branch (next) holds the next version, previewed at
+> <https://v2.gpradar.hectorvh.com>. The live site runs the latest release
+> from main.
+
 [![License](https://img.shields.io/github/license/hectorvh/GPRadar-UI)](https://github.com/hectorvh/GPRadar-UI/blob/main/LICENSE)
 [![Live demo](https://img.shields.io/website?url=https%3A%2F%2Fgpradar.hectorvh.com&label=live%20demo&up_message=online&down_message=offline)](https://gpradar.hectorvh.com)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -12,6 +16,7 @@
 [![Node 22](https://img.shields.io/badge/node-22-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Last commit](https://img.shields.io/github/last-commit/hectorvh/GPRadar-UI)](https://github.com/hectorvh/GPRadar-UI/commits/main)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24339830.svg)](https://doi.org/10.5281/zenodo.24339830)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/832105c0-007e-472d-98fd-152a91f883f3/deploy-status)](https://app.netlify.com/projects/gpradar/deploys)
 
 **Live demo: <https://gpradar.hectorvh.com>**
 
@@ -113,8 +118,30 @@ detections by confidence and export them as CSV or as an annotated PNG.
 - **Shortcuts.** <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> runs
   detection (no label on the button; the tooltip mentions it). Both side panels can be hidden and resized (drag the edge, or
   focus it and use the arrow keys); the layout is remembered in the browser.
-- **Phones.** One column: top bar, results, then the input panel. The side
-  menu starts closed and the page scrolls to the result when a run finishes.
+- **Phones (up to 640 px).** The top bar holds the menu button, the title
+  (*Project / analysis* inside a project; the project part is shortened
+  first), ⓘ and a moon/sun theme button, and stays at the top. The menu
+  button opens the side menu as a drawer from the left (same content; it
+  closes after picking a sample, *New analysis*, a project or analysis,
+  *Sign in* or *Settings*; Escape or a tap outside closes it too). Step 1
+  stays in the main column. Once an input is chosen, a bar at the bottom
+  offers *Settings* (steps 2 and 3 in a bottom sheet, with its own Run
+  button) and *Run detection*, which shows progress while it runs; after a
+  run it offers *Export* (CSV, annotated PNG) and *New analysis*. Detections
+  are cards (tap one to show its box; tap a box to jump to its card), the
+  confidence slider sits under the radargram, and profiles more than twice
+  as wide as high scroll sideways at full height (*Fit* shows them whole).
+  The project window shows one card per B-scan with *New analysis* and the
+  zip download at full width; a project's New analysis keeps the list and
+  puts the setup in the bottom sheet, with *Run N B-scans* in the bottom
+  bar. About, Sign in and Settings open full screen. The page scrolls to
+  the result when a run finishes.
+- **Tablets (641–1024 px).** The side menu is the same drawer; steps 2 and
+  3 stay in a 320 px column on the right (no resize handle), with its
+  toggle in the top bar.
+- **Touch.** On phones and tablets every control is at least 44 × 44 px,
+  and the ✎ rename and … options buttons are always visible. The drawer and
+  sheet animations are off when the system asks for reduced motion.
 - **Cold start.** The API runs on free hosting and sleeps when idle. The
   first request can take up to about a minute; a banner says so and the run
   starts by itself when the server is up.
@@ -153,6 +180,7 @@ value ends up in the public JavaScript, so never put secrets in it.
 | `npm run lint` | Check the code with ESLint |
 | `npm run build` | Build the static site into `dist/` |
 | `npm run preview` | Serve the built site on <http://localhost:4173> |
+| `npm run brand` | Rebuild the favicon, logo SVGs, home-screen icons and link preview from `src/lib/brand.ts` (see *Logo and brand assets*) |
 
 To build for a deployed API, set the URL at build time:
 
@@ -189,17 +217,32 @@ frame; dashed hyperbola for simulated samples), `AnalysisIcon` (the logo's
 brackets and hyperbola with the detected apex) and `ProjectIcon` (a frame
 behind the logo mark: several analyses).
 
+The drawing and the colours live in one place, `src/lib/brand.ts` (bracket
+and hyperbola path data, the four colours). `LogoIcon` and the mini icons
+use it, and `npm run brand` writes every file below from it.
+
 | File | Use |
 | --- | --- |
+| `src/lib/brand.ts` | Source of the path data and colours |
 | `public/favicon.svg` | Browser tab icon and the README logo |
 | `src/components/icons.tsx` → `LogoIcon` | The same drawing inside the app (side menu, top bar) |
 | `public/apple-touch-icon.png`, `public/icon-192.png`, `public/icon-512.png` | Home-screen icons (page-colour background), listed in `public/site.webmanifest` |
 | `public/og-image.png` | 1200 × 630 link preview (LinkedIn, Slack, etc.) |
-| `design/brand/` | Editable sources: `logo-mark.svg` (light), `logo-mark-dark.svg`, `icon-full-bleed.svg`, `og-image.html`; `logo-options.html` keeps the eight options that were compared (E was chosen) |
+| `design/brand/` | `logo-mark.svg` (light), `logo-mark-dark.svg`, `icon-full-bleed.svg` (written by `npm run brand`); `og-image.html` (the link preview layout, edit by hand); `logo-options.html` keeps the eight options that were compared (E was chosen) |
 
-To regenerate
-the PNGs, open the SVG or `og-image.html` in a browser at the target size
-and take a screenshot (or use any SVG-to-PNG tool); keep the file names.
+To rebuild the logo files after a change in `brand.ts` or `og-image.html`:
+
+```sh
+npx playwright install chromium   # once
+npm run brand
+```
+
+`scripts/render-brand.mjs` writes `public/favicon.svg` and the three
+`design/brand/*.svg` files from `brand.ts`, then renders with Playwright
+`apple-touch-icon.png` (180 px), `icon-192.png` and `icon-512.png` from
+`icon-full-bleed.svg`, and `og-image.png` (1200 × 630) from
+`og-image.html` with the app's Inter font. `src/lib/brand.test.ts` fails
+if a file drifts from `brand.ts` or uses another colour or any opacity.
 
 ## Project layout
 

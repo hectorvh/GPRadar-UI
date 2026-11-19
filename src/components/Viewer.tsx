@@ -1,4 +1,6 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useBreakpoint } from '../hooks/useBreakpoint'
+import { revealElement } from '../lib/scroll'
 import { THRESHOLD_MAX, THRESHOLD_MIN, THRESHOLD_STEP, parseThreshold, shownLabel } from '../lib/detections'
 import { AXIS_LABEL, fixed } from '../lib/format'
 import type { Detection, Mode, RunResponse } from '../lib/types'
@@ -27,6 +29,11 @@ interface Props {
   canRun: boolean
 }
 
+/** Profiles wider than this (width / height) scroll sideways on phones instead of shrinking to a strip. */
+const WIDE = 2
+/** Image height on phones when a wide profile scrolls sideways. */
+const SCROLL_H = 'min(50dvh, 360px)'
+
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/
 const dataUrl = (b64: string | null | undefined) => (b64 && BASE64.test(b64) ? `data:image/png;base64,${b64}` : null)
 
@@ -43,9 +50,13 @@ export function Viewer(p: Props) {
   const h = result?.input.height_px ?? 1
   const rawTab = useRef<HTMLButtonElement>(null)
   const procTab = useRef<HTMLButtonElement>(null)
+  const phone = useBreakpoint() === 'phone'
+  const [fit, setFit] = useState(false)
+  const wide = !!result && w / h > WIDE
+  const scrollWide = phone && wide && !fit
 
   useEffect(() => {
-    if (p.scrollToId != null) document.getElementById(`det-box-${p.scrollToId}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    if (p.scrollToId != null) revealElement(document.getElementById(`det-box-${p.scrollToId}`))
   }, [p.scrollToId])
 
   const onTabKey = (e: KeyboardEvent) => {
@@ -58,6 +69,38 @@ export function Viewer(p: Props) {
 
   const axes = result?.axes
   const velocity = result?.metadata.velocity_m_ns
+
+  const label = (
+    <label htmlFor="thr" style={{ fontSize: 13, color: 'var(--muted)' }}>
+      Confidence ≥
+    </label>
+  )
+  const slider = (
+    <input
+      id="thr"
+      type="range"
+      min={THRESHOLD_MIN}
+      max={THRESHOLD_MAX}
+      step={THRESHOLD_STEP}
+      value={p.threshold}
+      aria-valuetext={p.threshold.toFixed(2)}
+      onChange={(e) => p.onThreshold(parseThreshold(e.target.value))}
+    />
+  )
+  const value = (
+    <span className="mono" style={{ fontSize: 13, width: 36 }}>
+      {p.threshold.toFixed(2)}
+    </span>
+  )
+  const chip = (
+    <span className="chip" aria-live="polite">
+      {shownLabel(p.shown.length, total)}
+    </span>
+  )
+
+  // Desktop: at most 62 % of the viewport high at the native aspect ratio. Phones, wide
+  // profile: a fixed height and the full width, inside a sideways scroller.
+  const frameWidth = scrollWide ? `calc(${SCROLL_H} * ${w / h})` : `min(100%, calc(62vh * ${w / h}))`
 
   return (
     <section
@@ -113,59 +156,48 @@ export function Viewer(p: Props) {
             </button>
           )}
         </div>
-        <div className="viewer-tools" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <label htmlFor="thr" style={{ fontSize: 13, color: 'var(--muted)' }}>
-            Confidence ≥
-          </label>
-          <input
-            id="thr"
-            type="range"
-            min={THRESHOLD_MIN}
-            max={THRESHOLD_MAX}
-            step={THRESHOLD_STEP}
-            value={p.threshold}
-            aria-valuetext={p.threshold.toFixed(2)}
-            onChange={(e) => p.onThreshold(parseThreshold(e.target.value))}
-          />
-          <span className="mono" style={{ fontSize: 13, width: 36 }}>
-            {p.threshold.toFixed(2)}
-          </span>
-          <span className="chip" aria-live="polite">
-            {shownLabel(p.shown.length, total)}
-          </span>
-        </div>
+        {!phone && (
+          <div className="viewer-tools" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {label}
+            {slider}
+            {value}
+            {chip}
+          </div>
+        )}
       </div>
 
       <figure
         id="radargram"
         role="tabpanel"
         aria-labelledby={view === 'raw' ? 'tab-raw' : 'tab-processed'}
-        style={{ margin: 0, padding: '16px 56px 40px 56px', position: 'relative' }}
+        className="radargram"
+        style={{ margin: 0, padding: phone ? (scrollWide ? '8px 8px 8px' : '8px 36px 8px') : '16px 56px 40px 56px', position: 'relative' }}
       >
-        {/* Native aspect ratio, at most 62 % of the viewport high. */}
-        <div style={{ position: 'relative', width: `min(100%, calc(62vh * ${w / h}))`, margin: '0 auto' }}>
-          <div style={{ position: 'relative', aspectRatio: `${w} / ${h}`, borderRadius: 4, overflow: 'hidden', background: '#7d7d7d' }}>
-            {src ? (
-              <img
-                className="radargram-img"
-                src={src}
-                alt={`${view === 'raw' ? 'Raw' : 'Processed'} B-scan radargram, ${w} × ${h} px`}
-                draggable={false}
-              />
-            ) : (
-              <div className="placeholder" role="status" style={{ flexDirection: 'column', gap: 12 }}>
-                {p.busy && <span className="spin" aria-hidden="true" style={{ width: 22, height: 22, color: 'var(--accent)' }} />}
-                <span>{p.placeholder}</span>
-                {p.onRun && (
-                  <button type="button" className="btn primary" onClick={p.onRun} disabled={!p.canRun}>
-                    Run detection
-                  </button>
-                )}
-              </div>
-            )}
+        <div className={scrollWide ? 'rg-scroll scroll' : undefined}>
+          <div style={{ position: 'relative', width: frameWidth, margin: scrollWide ? 0 : '0 auto', flex: '0 0 auto' }}>
+            <div style={{ position: 'relative', aspectRatio: `${w} / ${h}`, borderRadius: 4, overflow: 'hidden', background: '#7d7d7d' }}>
+              {src ? (
+                <img
+                  className="radargram-img"
+                  src={src}
+                  alt={`${view === 'raw' ? 'Raw' : 'Processed'} B-scan radargram, ${w} × ${h} px`}
+                  draggable={false}
+                />
+              ) : (
+                <div className="placeholder" role="status" style={{ flexDirection: 'column', gap: 12 }}>
+                  {p.busy && <span className="spin" aria-hidden="true" style={{ width: 22, height: 22, color: 'var(--accent)' }} />}
+                  <span>{p.placeholder}</span>
+                  {p.onRun && (
+                    <button type="button" className="btn primary" onClick={p.onRun} disabled={!p.canRun}>
+                      Run detection
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {result && <BoxOverlay detections={p.shown} selectedId={p.selectedId} onSelect={p.onSelect} />}
+            {axes && <Axes axes={axes} compact={phone} />}
           </div>
-          {result && <BoxOverlay detections={p.shown} selectedId={p.selectedId} onSelect={p.onSelect} />}
-          {axes && <Axes axes={axes} />}
         </div>
         <figcaption
           style={{
@@ -173,8 +205,8 @@ export function Viewer(p: Props) {
             justifyContent: 'space-between',
             gap: 12,
             flexWrap: 'wrap',
-            marginTop: 26,
-            fontSize: 12,
+            marginTop: phone ? 22 : 26,
+            fontSize: phone ? 11 : 12,
             color: 'var(--muted)',
           }}
         >
@@ -199,6 +231,28 @@ export function Viewer(p: Props) {
           )}
         </figcaption>
       </figure>
+      {phone && (
+        <div className="viewer-tools-phone">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {label}
+            {value}
+            {wide && (
+              <button
+                type="button"
+                className="btn sm"
+                style={{ marginLeft: 'auto' }}
+                aria-pressed={fit}
+                title={fit ? 'Show the profile at full height (scroll sideways)' : 'Fit the whole profile to the screen width'}
+                onClick={() => setFit((f) => !f)}
+              >
+                Fit
+              </button>
+            )}
+          </div>
+          {slider}
+          <div>{chip}</div>
+        </div>
+      )}
     </section>
   )
 }

@@ -26,7 +26,7 @@ export default defineConfig(({ command, mode }) => {
     build: { target: 'es2022', sourcemap: false },
     test: {
       environment: 'node',
-      include: ['src/**/*.test.ts', 'build/**/*.test.ts'],
+      include: ['src/**/*.test.{ts,tsx}', 'build/**/*.test.ts'],
     },
   }
 })

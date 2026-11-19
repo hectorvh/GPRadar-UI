@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { shownLabel } from '../lib/detections'
-import { DASH, conf, fixed } from '../lib/format'
+import { DASH, fixed } from '../lib/format'
 import type { Detection } from '../lib/types'
+import { ConfBar, DetectionsMessage } from './DetectionParts'
 import { DownloadIcon } from './icons'
 
 interface Props {
@@ -75,12 +76,7 @@ export function DetectionsTable({ shown, total, selectedId, scrollToId, onSelect
                   </button>
                 </td>
                 <td>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 60, height: 6, borderRadius: 3, background: 'var(--border)', display: 'inline-block', overflow: 'hidden' }}>
-                      <span style={{ display: 'block', height: 6, width: `${Math.round(d.confidence * 100)}%`, background: 'var(--accent)' }} />
-                    </span>
-                    <span className="mono">{conf(d.confidence)}</span>
-                  </span>
+                  <ConfBar value={d.confidence} />
                 </td>
                 <td className="mono">{fixed(d.apex.distance_m, 2)}</td>
                 <td className="mono">{fixed(d.apex.twt_ns, 1)}</td>
@@ -93,17 +89,7 @@ export function DetectionsTable({ shown, total, selectedId, scrollToId, onSelect
           </tbody>
         </table>
       </div>
-      {!hasResult && (
-        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>Run a sample or upload a B-scan to see detections</p>
-      )}
-      {hasResult && total === 0 && (
-        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>No hyperbolas detected in this scan (confidence ≥ 0.05)</p>
-      )}
-      {hasResult && total! > 0 && shown.length === 0 && (
-        <p style={{ margin: 0, padding: 16, color: 'var(--muted)', fontSize: 13 }}>
-          No detections above {threshold.toFixed(2)} confidence. Lower the threshold to see more
-        </p>
-      )}
+      <DetectionsMessage total={total} shown={shown.length} threshold={threshold} />
     </section>
   )
 }

@@ -56,7 +56,7 @@ export function AuthDialog({ open, onClose }: Props) {
   }
 
   return (
-    <Dialog open={open} onClose={close} title={tab === 'login' ? 'Log in to GPRadar' : 'Create your account'} width={400}>
+    <Dialog open={open} onClose={close} title={tab === 'login' ? 'Log in to GPRadar' : 'Create your account'} width={400} fullOnPhone>
       <p style={{ color: 'var(--muted)', fontSize: 13 }}>Save analyses and find them again under Projects</p>
 
       <div className="seg" role="tablist" aria-label="Account">

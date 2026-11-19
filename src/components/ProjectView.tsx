@@ -1,4 +1,5 @@
 import type { QueueItem } from '../hooks/useBatch'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import { shortDate, shownCount, type Analysis, type Project } from '../lib/library'
 import { AnalysisIcon, DotsIcon, DownloadIcon, PlayIcon, PlusIcon, TrashIcon } from './icons'
 
@@ -38,6 +39,37 @@ export function ProjectView(p: Props) {
   const waiting = p.queue.filter((q) => q.status === 'pending').length
   const total = p.analyses.reduce((n, a) => n + shownCount(a), 0)
   const empty = p.analyses.length === 0 && p.queue.length === 0
+  const phone = useBreakpoint() === 'phone'
+  const modeLabel = (m: QueueItem['mode']) => (m === 'full' ? 'Full pipeline' : 'Detector only')
+  const queueChip = (q: QueueItem) => (
+    <span className={'chip' + (q.status === 'error' ? ' err' : '')} title={q.error}>
+      {(q.status === 'running' || q.status === 'waiting') && <span className="spin" aria-hidden="true" />}
+      {q.status === 'pending' && p.paused ? 'Paused' : STATUS[q.status]}
+    </span>
+  )
+  const removeButton = (q: QueueItem) => (
+    <button
+      type="button"
+      className="btn sm ghost icon"
+      aria-label={`Remove ${q.label} from the queue`}
+      disabled={q.status === 'running' || q.status === 'waiting'}
+      onClick={() => p.onRemoveQueued(q.key)}
+    >
+      <TrashIcon />
+    </button>
+  )
+  const optionsButton = (a: Analysis) => (
+    <button
+      type="button"
+      className="btn sm ghost icon"
+      aria-label={`Options for ${a.name}`}
+      aria-haspopup="menu"
+      aria-expanded={p.menuOpenId === a.id}
+      onClick={(e) => p.onMenu(a.id, e.currentTarget)}
+    >
+      <DotsIcon />
+    </button>
+  )
 
   return (
     <section aria-labelledby="project-title" className="project-view">
@@ -92,6 +124,51 @@ export function ProjectView(p: Props) {
             New analysis
           </button>
         </div>
+      ) : phone ? (
+        <ul className="scan-cards">
+          {p.analyses.map((a) => (
+            <li key={a.id} className="scan-card">
+              <div className="scan-card-head">
+                <button type="button" className="scan-link" onClick={() => p.onOpen(a.id)} title="Open this analysis">
+                  <AnalysisIcon />
+                  <span>{a.name}</span>
+                </button>
+                {optionsButton(a)}
+              </div>
+              <p className="scan-card-meta">
+                {modeLabel(a.mode)} ·{' '}
+                <span className="mono">
+                  {shownCount(a)} <span style={{ color: 'var(--muted)' }}>≥ {a.threshold.toFixed(2)}</span>
+                </span>
+              </p>
+              <div className="scan-card-foot">
+                <span className="chip ok">Done · {shortDate(a.updatedAt)}</span>
+                <span className="row-actions">
+                  <button type="button" className="btn sm" onClick={() => p.onCsv(a)} aria-label={`Download CSV for ${a.name}`}>
+                    <DownloadIcon /> CSV
+                  </button>
+                  <button type="button" className="btn sm" onClick={() => p.onPng(a)} aria-label={`Download annotated PNG for ${a.name}`}>
+                    <DownloadIcon /> PNG
+                  </button>
+                </span>
+              </div>
+            </li>
+          ))}
+          {p.queue.map((q) => (
+            <li key={q.key} className="scan-card queued">
+              <div className="scan-card-head">
+                <span className="scan-link static">
+                  <AnalysisIcon />
+                  <span>{q.label}</span>
+                </span>
+                {removeButton(q)}
+              </div>
+              <p className="scan-card-meta">{modeLabel(q.mode)}</p>
+              <div className="scan-card-foot">{queueChip(q)}</div>
+              {q.error && <p style={{ margin: 0, fontSize: 12, color: 'var(--warn-ink)' }}>{q.error}</p>}
+            </li>
+          ))}
+        </ul>
       ) : (
         <div style={{ overflowX: 'auto', position: 'relative' }}>
           <table className="det project-table">
@@ -135,16 +212,7 @@ export function ProjectView(p: Props) {
                       >
                         <DownloadIcon /> PNG
                       </button>
-                      <button
-                        type="button"
-                        className="btn sm ghost icon"
-                        aria-label={`Options for ${a.name}`}
-                        aria-haspopup="menu"
-                        aria-expanded={p.menuOpenId === a.id}
-                        onClick={(e) => p.onMenu(a.id, e.currentTarget)}
-                      >
-                        <DotsIcon />
-                      </button>
+                      {optionsButton(a)}
                     </span>
                   </td>
                 </tr>
@@ -160,25 +228,14 @@ export function ProjectView(p: Props) {
                   <td style={{ color: 'var(--muted)' }}>{q.mode === 'full' ? 'Full pipeline' : 'Detector only'}</td>
                   <td style={{ color: 'var(--muted)' }}>–</td>
                   <td>
-                    <span className={'chip' + (q.status === 'error' ? ' err' : '')} title={q.error}>
-                      {(q.status === 'running' || q.status === 'waiting') && <span className="spin" aria-hidden="true" />}
-                      {q.status === 'pending' && p.paused ? 'Paused' : STATUS[q.status]}
-                    </span>
+                    {queueChip(q)}
                     {q.error && (
                       <div style={{ fontSize: 11, color: 'var(--warn-ink)', whiteSpace: 'normal', maxWidth: 260 }}>{q.error}</div>
                     )}
                   </td>
                   <td>
                     <span className="row-actions">
-                      <button
-                        type="button"
-                        className="btn sm ghost icon"
-                        aria-label={`Remove ${q.label} from the queue`}
-                        disabled={q.status === 'running' || q.status === 'waiting'}
-                        onClick={() => p.onRemoveQueued(q.key)}
-                      >
-                        <TrashIcon />
-                      </button>
+                      {removeButton(q)}
                     </span>
                   </td>
                 </tr>

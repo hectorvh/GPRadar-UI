@@ -81,7 +81,7 @@ export function SettingsDialog({ open, onClose, settings, onChange, account }: P
   }
 
   return (
-    <Dialog open={open} onClose={close} title="Settings" width={460}>
+    <Dialog open={open} onClose={close} title="Settings" width={460} fullOnPhone>
       <fieldset className="settings-group">
         <legend className="sec-title">Display</legend>
         <label className="check">

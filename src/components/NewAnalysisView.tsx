@@ -25,6 +25,8 @@ interface Props {
   onRemove: (key: string) => void
   onRun: () => void
   onCancel: () => void
+  /** Phones: the setup is in the bottom sheet and Run in the bottom bar. */
+  setupInSheet?: boolean
 }
 
 /** New analysis inside a project: pick several B-scans, run them all with one setup. */
@@ -61,8 +63,8 @@ export function NewAnalysisView(p: Props) {
           Choose one or more B-scans
         </h2>
         <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>
-          They all run with the same setup from steps 2 and 3 on the right (now: {p.modeLabel}), one after another, and appear in the
-          project window, where each can be exported on its own or together as the project.
+          They all run with the same setup from steps 2 and 3 {p.setupInSheet ? 'under Settings' : 'on the right'} (now: {p.modeLabel}), one
+          after another, and appear in the project window, where each can be exported on its own or together as the project.
         </p>
       </div>
 
@@ -124,9 +126,11 @@ export function NewAnalysisView(p: Props) {
         <button type="button" className="btn ghost" onClick={p.onCancel}>
           Cancel
         </button>
-        <button type="button" className="btn primary" disabled={!p.canRun} onClick={p.onRun}>
-          Run {p.items.length || ''} B-scan{p.items.length === 1 ? '' : 's'}
-        </button>
+        {!p.setupInSheet && (
+          <button type="button" className="btn primary" disabled={!p.canRun} onClick={p.onRun}>
+            Run {p.items.length || ''} B-scan{p.items.length === 1 ? '' : 's'}
+          </button>
+        )}
       </div>
     </section>
   )
