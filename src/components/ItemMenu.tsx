@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 export interface MenuItem {
   key: string
@@ -81,7 +82,7 @@ export function ItemMenu({ label, items, anchor, align = 'end', onClose }: Props
     }
   }
 
-  return (
+  const menu = (
     <div ref={ref} role="menu" aria-label={label} className="menu" style={{ ...pos, width: WIDTH }} onKeyDown={onKey}>
       {items.map((it) => (
         <div key={it.key}>
@@ -105,4 +106,8 @@ export function ItemMenu({ label, items, anchor, align = 'end', onClose }: Props
       ))}
     </div>
   )
+  // Inside a modal <dialog> (the side-menu drawer) everything outside the dialog is
+  // inert, so the menu is rendered into that dialog.
+  const host = anchor.closest('dialog')
+  return host?.open ? createPortal(menu, host) : menu
 }

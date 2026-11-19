@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ActionBar } from './components/ActionBar'
 import { AuthDialog } from './components/AuthDialog'
+import { BottomSheet } from './components/BottomSheet'
+import { DetectionCards } from './components/DetectionCards'
 import { DetectionsTable } from './components/DetectionsTable'
 import { Dialog } from './components/Dialog'
+import { Drawer } from './components/Drawer'
 import { EmptyState } from './components/EmptyState'
 import { AnalysisIcon, ArchiveIcon, DownloadIcon, MoveIcon, PencilIcon, PinIcon, ShareIcon, TrashIcon } from './components/icons'
 import { InfoDialog } from './components/InfoDialog'
-import { InputPanel } from './components/InputPanel'
+import { InputPanel, SetupFields } from './components/InputPanel'
 import { ItemMenu, type MenuItem } from './components/ItemMenu'
 import { LeftNav } from './components/LeftNav'
 import { AnalysesNav, ProjectsNav } from './components/LibraryNav'
@@ -20,12 +24,14 @@ import { UploadDrop } from './components/UploadDrop'
 import { Viewer, type View } from './components/Viewer'
 import { useBackend, useSamples } from './hooks/useBackend'
 import { useBatch, type QueueItem } from './hooks/useBatch'
+import { useBreakpoint } from './hooks/useBreakpoint'
 import { useLibrary } from './hooks/useLibrary'
 import { usePanels } from './hooks/usePanels'
 import { useRun } from './hooks/useRun'
 import { useSettings } from './hooks/useSettings'
 import { useTheme } from './hooks/useTheme'
 import { currentAccount } from './lib/auth'
+import { TABLET_PANEL_W } from './lib/breakpoints'
 import { detectionsToCsv, downloadBlob, exportFilename } from './lib/csv'
 import { THRESHOLD_DEFAULT, filterByThreshold } from './lib/detections'
 import { annotatedPng } from './lib/exportPng'
@@ -49,6 +55,9 @@ export default function App() {
   const samples = useSamples(ready)
   const lib = useLibrary()
   const { settings, update: updateSettings } = useSettings()
+  const bp = useBreakpoint()
+  const phone = bp === 'phone'
+  const desktop = bp === 'desktop'
 
   // Set further down (they need the page state); called when runs finish.
   const onRunDone = useRef<((r: RunResponse) => void) | null>(null)
@@ -93,6 +102,12 @@ export default function App() {
   const [moveId, setMoveId] = useState<string | null>(null)
   const [rejected, setRejected] = useState<string[]>([])
   const fileToken = useRef(0)
+  /** Phones and tablets: the side menu drawer. */
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  /** Phones: the setup bottom sheet (steps 2 and 3). */
+  const [sheetOpen, setSheetOpen] = useState(false)
+  /** Phones: the Export menu of the bottom bar (anchored to its button). */
+  const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
 
   const { values: metaValues, errors: metaErrors } = useMemo(() => parseMetadata(meta), [meta])
   const metaInvalid = Object.keys(metaErrors).length > 0
@@ -519,9 +534,10 @@ export default function App() {
 
   // On a phone the results sit below the fold: bring them into view when a run finishes.
   useEffect(() => {
-    if (run.status !== 'done' || !window.matchMedia?.('(max-width: 820px)').matches) return
-    document.getElementById('viewer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [run.status])
+    if (run.status !== 'done' || !phone) return
+    const smooth = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    document.getElementById('viewer')?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+  }, [run.status, phone])
 
   const home = !projectViewId && !draft && !source && !result && run.status === 'idle'
   // Steps 2 and 3 (right panel) only while setting up or running an analysis: not in the
@@ -563,6 +579,109 @@ export default function App() {
     onMenu: (key: ItemKey, anchor: HTMLElement) => toggleMenu(key, anchor, 'list'),
   }
 
+  // Side menu actions that leave the menu also close the drawer (phones, tablets).
+  const closeDrawer = () => setDrawerOpen(false)
+  const leftNavProps = {
+    samples,
+    activeSampleId: !projectViewId && !draft && source?.type === 'sample' ? source.sample.id : null,
+    onPickSample: (s: Sample) => {
+      closeDrawer()
+      pickSample(s)
+    },
+    onNewAnalysis: () => {
+      closeDrawer()
+      goHome()
+    },
+    onNewProject: () => {
+      closeDrawer()
+      newProject()
+    },
+    onSignIn: () => {
+      closeDrawer()
+      setDialog('auth')
+    },
+    onSettings: () => {
+      closeDrawer()
+      setDialog('settings')
+    },
+    onHome: () => {
+      closeDrawer()
+      goHome()
+    },
+    showSamples: settings.showSamples,
+    projectsNav: (
+      <ProjectsNav
+        {...nav}
+        onOpenProject={(id) => {
+          closeDrawer()
+          openProject(id)
+        }}
+        onOpenAnalysis={(id) => {
+          closeDrawer()
+          openAnalysis(id)
+        }}
+      />
+    ),
+    analysesNav: (
+      <AnalysesNav
+        {...nav}
+        onOpenAnalysis={(id) => {
+          closeDrawer()
+          openAnalysis(id)
+        }}
+        onSignIn={() => {
+          closeDrawer()
+          setDialog('auth')
+        }}
+      />
+    ),
+  }
+
+  // Phones: the bottom sheet holds steps 2 and 3; offered, like the desktop panel, only while
+  // setting up or running an analysis (with an input chosen).
+  const sheetAvailable = phone && showSetup && (!!draft || !!source || busy)
+  const runFromBar = () => {
+    if (metaInvalid) {
+      setMetaOpen(true)
+      setSheetOpen(true)
+    } else runCurrent()
+  }
+  // Phones: what the bottom action bar offers (none on Home and in the project window).
+  const barKind: 'batch' | 'result' | 'setup' | null = !phone
+    ? null
+    : draft && draftProject
+      ? 'batch'
+      : viewedProject
+        ? null
+        : result && !busy
+          ? 'result'
+          : source || busy
+            ? 'setup'
+            : null
+
+  const setupProps = {
+    source: draft ? null : source,
+    mode,
+    onMode: setMode,
+    modes: settings.modes,
+    metaOpen,
+    onToggleMeta: () => setMetaOpen((o) => !o),
+    meta,
+    onMeta: (f: MetaField, v: string) => setMeta((m) => ({ ...m, [f]: v })),
+    metaErrors,
+    run,
+    canRun: !!source && !metaInvalid,
+    modelRevision: backend.health?.model.revision ?? null,
+  }
+  const batchSetup = draft
+    ? {
+        count: draft.items.length,
+        kind: draftKind,
+        canRun: canRunDraft,
+        onRun: runDraft,
+      }
+    : null
+
   const deleting = confirmDelete
     ? confirmDelete.startsWith('p:')
       ? { kind: 'project' as const, item: lib.getProject(confirmDelete.slice(2)) }
@@ -571,30 +690,23 @@ export default function App() {
   const deletingCount = deleting?.kind === 'project' && deleting.item && libOk ? analysesOf(libOk.analyses, deleting.item.id).length : 0
 
   return (
-    <div className={'app' + (home ? ' first-screen' : '')}>
-      {panels.leftOpen && (
+    <div className={'app layout-' + bp}>
+      {desktop && panels.leftOpen && (
         <>
-          <LeftNav
-            width={panels.leftW}
-            samples={samples}
-            activeSampleId={!projectViewId && !draft && source?.type === 'sample' ? source.sample.id : null}
-            onPickSample={pickSample}
-            onNewAnalysis={goHome}
-            onNewProject={newProject}
-            onHide={panels.toggleLeft}
-            onSignIn={() => setDialog('auth')}
-            onSettings={() => setDialog('settings')}
-            onHome={goHome}
-            showSamples={settings.showSamples}
-            projectsNav={<ProjectsNav {...nav} onOpenProject={openProject} onOpenAnalysis={openAnalysis} />}
-            analysesNav={<AnalysesNav {...nav} onOpenAnalysis={openAnalysis} onSignIn={() => setDialog('auth')} />}
-          />
+          <LeftNav width={panels.leftW} onHide={panels.toggleLeft} {...leftNavProps} />
           <ResizeHandle side="left" width={panels.leftW} onResize={panels.setLeftW} label="Resize side menu (arrow keys)" />
         </>
       )}
+      {!desktop && (
+        <Drawer open={drawerOpen} onClose={closeDrawer} label="Side menu">
+          <LeftNav variant="drawer" onHide={closeDrawer} {...leftNavProps} />
+        </Drawer>
+      )}
 
-      <main className="main" style={{ flex: '999 1 560px', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <main className="main">
         <TopBar
+          layout={bp}
+          onOpenDrawer={() => setDrawerOpen(true)}
           title={title}
           crumb={crumb}
           editable={!draft}
@@ -614,8 +726,8 @@ export default function App() {
           onToggleLeft={panels.toggleLeft}
           onToggleRight={panels.toggleRight}
         />
-        <div className="scroll main-scroll" style={{ flex: 1, minHeight: 0 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 20, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
+        <div className="scroll main-scroll">
+          <div className="main-inner">
             <StatusBanner
               backend={backend.status}
               slow={backend.slow}
@@ -655,6 +767,7 @@ export default function App() {
                 onRemove={(key) => setDraft((d) => (d ? { ...d, items: d.items.filter((i) => i.key !== key) } : d))}
                 onRun={runDraft}
                 onCancel={() => openProject(draft.projectId)}
+                setupInSheet={phone}
               />
             ) : home ? (
               <EmptyState
@@ -692,56 +805,89 @@ export default function App() {
                   onSelect={select('box')}
                   placeholder={placeholder}
                   busy={busy}
-                  onRun={source && run.status !== 'error' && !busy && !result ? runCurrent : null}
+                  onRun={!phone && source && run.status !== 'error' && !busy && !result ? runCurrent : null}
                   canRun={canRun}
                 />
-                <DetectionsTable
-                  shown={shown}
-                  total={result ? result.detections.length : null}
-                  selectedId={selectedId}
-                  scrollToId={current?.from === 'box' ? current.id : null}
-                  onSelect={select('row')}
-                  onCsv={onCsv}
-                  onPng={onPng}
-                  exporting={exporting}
-                  threshold={threshold}
-                />
+                {phone ? (
+                  <DetectionCards
+                    shown={shown}
+                    total={result ? result.detections.length : null}
+                    selectedId={selectedId}
+                    scrollToId={current?.from === 'box' ? current.id : null}
+                    onSelect={select('row')}
+                    threshold={threshold}
+                  />
+                ) : (
+                  <DetectionsTable
+                    shown={shown}
+                    total={result ? result.detections.length : null}
+                    selectedId={selectedId}
+                    scrollToId={current?.from === 'box' ? current.id : null}
+                    onSelect={select('row')}
+                    onCsv={onCsv}
+                    onPng={onPng}
+                    exporting={exporting}
+                    threshold={threshold}
+                  />
+                )}
               </>
             )}
           </div>
         </div>
+        {barKind === 'batch' && draft && (
+          <ActionBar kind="batch" count={draft.items.length} canRun={canRunDraft} onRun={runDraft} onSettings={() => setSheetOpen(true)} />
+        )}
+        {barKind === 'result' && (
+          <ActionBar
+            kind="result"
+            exportOpen={!!exportAnchor}
+            exporting={exporting}
+            onExport={(a) => setExportAnchor((x) => (x ? null : a))}
+            onNewAnalysis={goHome}
+          />
+        )}
+        {barKind === 'setup' && <ActionBar kind="setup" run={run} canRun={!!source} onRun={runFromBar} onSettings={() => setSheetOpen(true)} />}
       </main>
 
-      {panels.rightOpen && showSetup && (
+      {!phone && panels.rightOpen && showSetup && (
         <>
-          <ResizeHandle side="right" width={panels.rightW} onResize={panels.setRightW} label="Resize input panel (arrow keys)" />
-          <InputPanel
-            width={panels.rightW}
-            source={draft ? null : source}
-            mode={mode}
-            onMode={setMode}
-            modes={settings.modes}
-            metaOpen={metaOpen}
-            onToggleMeta={() => setMetaOpen((o) => !o)}
-            meta={meta}
-            onMeta={(f: MetaField, v: string) => setMeta((m) => ({ ...m, [f]: v }))}
-            metaErrors={metaErrors}
-            run={run}
-            onRun={runCurrent}
-            canRun={!!source && !metaInvalid}
-            modelRevision={backend.health?.model.revision ?? null}
+          {desktop && (
+            <ResizeHandle side="right" width={panels.rightW} onResize={panels.setRightW} label="Resize input panel (arrow keys)" />
+          )}
+          <InputPanel width={desktop ? panels.rightW : TABLET_PANEL_W} {...setupProps} onRun={runCurrent} batch={batchSetup} />
+        </>
+      )}
+      {phone && (
+        <BottomSheet open={sheetOpen && sheetAvailable} onClose={() => setSheetOpen(false)} title="Settings">
+          <SetupFields
+            {...setupProps}
+            onRun={() => {
+              setSheetOpen(false)
+              runCurrent()
+            }}
             batch={
-              draft
-                ? {
-                    count: draft.items.length,
-                    kind: draftKind,
-                    canRun: canRunDraft,
-                    onRun: runDraft,
-                  }
-                : null
+              batchSetup && {
+                ...batchSetup,
+                onRun: () => {
+                  setSheetOpen(false)
+                  runDraft()
+                },
+              }
             }
           />
-        </>
+        </BottomSheet>
+      )}
+      {exportAnchor && (
+        <ItemMenu
+          label="Export"
+          items={[
+            { key: 'csv', label: 'CSV', icon: <DownloadIcon />, run: onCsv },
+            { key: 'png', label: 'Annotated PNG', icon: <DownloadIcon />, run: onPng },
+          ]}
+          anchor={exportAnchor}
+          align="start"
+          onClose={() => setExportAnchor(null)}
+        />
       )}
 
       {menu && (

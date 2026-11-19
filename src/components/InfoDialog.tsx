@@ -7,7 +7,7 @@ const ext = { target: '_blank', rel: 'noopener noreferrer' } as const
 /** About, licences and data credits. Opened from the info button in the top bar. */
 export function InfoDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Dialog open={open} onClose={onClose} title="About GPRadar" width={480}>
+    <Dialog open={open} onClose={onClose} title="About GPRadar" width={480} fullOnPhone>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <LogoIcon size={40} />
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>

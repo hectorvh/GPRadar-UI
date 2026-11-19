@@ -1,5 +1,18 @@
 /** Inline SVG icons from the mockup (decorative: aria-hidden). */
 import type { CSSProperties } from 'react'
+import {
+  LOGO_BRACKETS,
+  LOGO_HYPERBOLA,
+  LOGO_HYP_STROKE,
+  LOGO_STROKE,
+  LOGO_VIEWBOX,
+  MINI_ANALYSIS_BRACKETS,
+  MINI_PROJECT_BRACKETS,
+  MINI_PROJECT_FRAME,
+  MINI_PROJECT_HYPERBOLA,
+  MINI_SAMPLE_HYPERBOLA,
+  MINI_STROKE,
+} from '../lib/brand'
 
 const line = (width: number, stroke = 'currentColor', extra: CSSProperties = {}): CSSProperties => ({
   fill: 'none',
@@ -8,37 +21,28 @@ const line = (width: number, stroke = 'currentColor', extra: CSSProperties = {})
   ...extra,
 })
 
-/** Hyperbola paths shared by the logo and the mini icons (32 x 32 grid). */
-const HYP =
-  'M8.00 22.35 L8.67 21.14 L9.33 19.95 L10.00 18.79 L10.67 17.67 L11.33 16.59 L12.00 15.56 L12.67 14.61 L13.33 13.76 L14.00 13.04 L14.67 12.48 L15.33 12.12 L16.00 12.00 L16.67 12.12 L17.33 12.48 L18.00 13.04 L18.67 13.76 L19.33 14.61 L20.00 15.56 L20.67 16.59 L21.33 17.67 L22.00 18.79 L22.67 19.95 L23.33 21.14 L24.00 22.35'
-const HYP_PROJECT =
-  'M6.50 23.55 L7.15 22.37 L7.80 21.21 L8.45 20.09 L9.10 19.00 L9.75 17.98 L10.40 17.04 L11.05 16.22 L11.70 15.57 L12.35 15.15 L13.00 15.00 L13.65 15.15 L14.30 15.57 L14.95 16.22 L15.60 17.04 L16.25 17.98 L16.90 19.00 L17.55 20.09 L18.20 21.21 L18.85 22.37 L19.50 23.55'
-const HYP_SAMPLE =
-  'M9.00 20.59 L9.58 19.68 L10.17 18.79 L10.75 17.92 L11.33 17.08 L11.92 16.28 L12.50 15.53 L13.08 14.84 L13.67 14.23 L14.25 13.72 L14.83 13.33 L15.42 13.08 L16.00 13.00 L16.58 13.08 L17.17 13.33 L17.75 13.72 L18.33 14.23 L18.92 14.84 L19.50 15.53 L20.08 16.28 L20.67 17.08 L21.25 17.92 L21.83 18.79 L22.42 19.68 L23.00 20.59'
-
 /** Brand mark (logo option E): viewfinder brackets around a radar hyperbola, no background.
  *  One colour that follows the theme (--logo-mark: dark in light mode, light in dark mode).
- *  Same drawing as public/favicon.svg; source design/brand/logo-mark.svg. */
+ *  Path data from src/lib/brand.ts, like public/favicon.svg and design/brand/. */
 export const LogoIcon = ({ size = 30 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="3.5 3.5 25 25" aria-hidden="true" style={{ flex: '0 0 auto', display: 'block' }}>
-    <g fill="none" stroke="var(--logo-mark)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-      <path d="M5 10V5h5" />
-      <path d="M22 5h5v5" />
-      <path d="M27 22v5h-5" />
-      <path d="M10 27H5v-5" />
-      <path d={HYP} strokeWidth="2.4" />
+  <svg width={size} height={size} viewBox={LOGO_VIEWBOX} aria-hidden="true" style={{ flex: '0 0 auto', display: 'block' }}>
+    <g fill="none" stroke="var(--logo-mark)" strokeLinecap="round" strokeLinejoin="round" strokeWidth={LOGO_STROKE}>
+      {LOGO_BRACKETS.map((d) => (
+        <path key={d} d={d} />
+      ))}
+      <path d={LOGO_HYPERBOLA} strokeWidth={LOGO_HYP_STROKE} />
     </g>
   </svg>
 )
 
 const mini = (color = 'var(--muted)') =>
-  ({ fill: 'none', stroke: color, strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round', flex: '0 0 auto' }) as const
+  ({ fill: 'none', stroke: color, strokeWidth: MINI_STROKE, strokeLinecap: 'round', strokeLinejoin: 'round', flex: '0 0 auto' }) as const
 
 /** Mini icon: one analysis (one B-scan) = the logo's brackets and hyperbola, plus the detected apex. */
 export const AnalysisIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" style={mini()}>
-    <path d="M5 11V5h6M21 5h6v6M27 21v6h-6M11 27H5v-6" />
-    <path d={HYP} />
+    <path d={MINI_ANALYSIS_BRACKETS} />
+    <path d={LOGO_HYPERBOLA} />
     <circle cx="16" cy="12" r="2.4" fill="var(--muted)" stroke="none" />
   </svg>
 )
@@ -46,9 +50,9 @@ export const AnalysisIcon = ({ size = 16 }: { size?: number }) => (
 /** Mini icon: a project = several analyses stacked (a frame behind the logo mark). */
 export const ProjectIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" style={mini()}>
-    <path d="M10 3h17a2 2 0 0 1 2 2v17" />
-    <path d="M3 12V8h4M19 8h4v4M23 25v4h-4M7 29H3v-4" />
-    <path d={HYP_PROJECT} />
+    <path d={MINI_PROJECT_FRAME} />
+    <path d={MINI_PROJECT_BRACKETS} />
+    <path d={MINI_PROJECT_HYPERBOLA} />
   </svg>
 )
 
@@ -56,7 +60,7 @@ export const ProjectIcon = ({ size = 16 }: { size?: number }) => (
 export const SampleIcon = ({ size = 16, simulated = false }: { size?: number; simulated?: boolean }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" style={mini()}>
     <rect x="4" y="5" width="24" height="22" rx="4" />
-    <path d={HYP_SAMPLE} strokeDasharray={simulated ? '3 3.2' : undefined} />
+    <path d={MINI_SAMPLE_HYPERBOLA} strokeDasharray={simulated ? '3 3.2' : undefined} />
   </svg>
 )
 
@@ -103,6 +107,20 @@ export const InfoIcon = () => (
 export const MoonIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={line(1.8)}>
     <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+  </svg>
+)
+
+export const SunIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={line(1.8, 'currentColor', { strokeLinecap: 'round' })}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+  </svg>
+)
+
+/** Opens the side menu drawer (phones and tablets). */
+export const MenuIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style={line(1.8, 'currentColor', { strokeLinecap: 'round' })}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
   </svg>
 )
 

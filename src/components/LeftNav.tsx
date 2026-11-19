@@ -3,10 +3,13 @@ import type { SamplesState } from '../hooks/useBackend'
 import { LINKS } from '../lib/links'
 import { sampleKindLabel, shortCitation } from '../lib/source'
 import type { Sample } from '../lib/types'
-import { ChevronIcon, GearIcon, GithubIcon, LogoIcon, PanelLeftIcon, PlusIcon, SampleIcon, UserIcon, WarnIcon } from './icons'
+import { ChevronIcon, CloseIcon, GearIcon, GithubIcon, LogoIcon, PanelLeftIcon, PlusIcon, SampleIcon, UserIcon, WarnIcon } from './icons'
 
 interface Props {
-  width: number
+  /** 'column': resizable column (desktop). 'drawer': inside the side-menu drawer (phones, tablets). */
+  variant?: 'column' | 'drawer'
+  /** Column width; not used in the drawer. */
+  width?: number
   samples: SamplesState
   activeSampleId: string | null
   onPickSample: (s: Sample) => void
@@ -87,6 +90,7 @@ function Section({
 }
 
 export function LeftNav({
+  variant = 'column',
   width,
   samples,
   activeSampleId,
@@ -117,20 +121,21 @@ export function LeftNav({
   }, [open])
 
   const toggle = (id: SectionId) => () => setOpen((o) => ({ ...o, [id]: !o[id] }))
+  const drawer = variant === 'drawer'
 
   return (
     <nav
-      className="panel scroll leftnav"
+      className={'panel scroll leftnav' + (drawer ? ' in-drawer' : '')}
       aria-label="Samples and projects"
       style={{
-        width,
+        width: drawer ? '100%' : width,
         flex: '0 0 auto',
-        minHeight: 0,
+        minHeight: drawer ? '100%' : 0,
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
         padding: '14px 12px',
-        borderRight: '1px solid var(--border)',
+        borderRight: drawer ? 0 : '1px solid var(--border)',
         background: 'var(--nav)',
       }}
     >
@@ -148,9 +153,15 @@ export function LeftNav({
             </a>
           </div>
         </div>
-        <button type="button" className="btn ghost icon" aria-label="Hide side menu" title="Hide side menu" onClick={onHide}>
-          <PanelLeftIcon />
-        </button>
+        {drawer ? (
+          <button type="button" className="btn ghost icon" aria-label="Close menu" title="Close menu" onClick={onHide}>
+            <CloseIcon />
+          </button>
+        ) : (
+          <button type="button" className="btn ghost icon" aria-label="Hide side menu" title="Hide side menu" onClick={onHide}>
+            <PanelLeftIcon />
+          </button>
+        )}
       </div>
 
       <button type="button" className="btn" style={{ justifyContent: 'flex-start' }} onClick={onNewAnalysis}>
@@ -269,7 +280,6 @@ export function LeftNav({
         <button
           type="button"
           className="btn ghost icon signin-min"
-          style={{ width: 36, flex: '0 0 auto' }}
           onClick={onSettings}
           aria-haspopup="dialog"
           aria-label="Settings"

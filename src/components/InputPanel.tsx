@@ -1,13 +1,13 @@
 import type { RunState } from '../hooks/useRun'
 import { duration, shortRev } from '../lib/format'
+import { runLabel } from '../lib/runLabel'
 import type { MetaStrings } from '../lib/metadata'
 import { sourceKind, type Source } from '../lib/source'
 import type { InputKind, MetaField, Mode } from '../lib/types'
 import { MetadataForm } from './MetadataForm'
 import { ModeToggle } from './ModeToggle'
 
-interface Props {
-  width: number
+interface SetupProps {
   /** The chosen input (step 1 lives in the main column); used for mode warnings and Run info. */
   source: Source | null
   mode: Mode
@@ -33,32 +33,20 @@ interface Props {
   } | null
 }
 
-function runLabel(run: RunState) {
-  switch (run.status) {
-    case 'queued':
-      return 'Waiting for server…'
-    case 'uploading':
-      return run.progress != null && run.progress < 1 ? `Uploading… ${Math.round(run.progress * 100)}%` : 'Uploading…'
-    case 'running':
-      return 'Running…'
-    default:
-      return 'Run detection'
-  }
+interface Props extends SetupProps {
+  width: number
 }
 
 const row = { display: 'flex', justifyContent: 'space-between', gap: 8 } as const
 
-export function InputPanel(p: Props) {
-  const busy = p.run.status === 'queued' || p.run.status === 'uploading' || p.run.status === 'running'
-  const kind = sourceKind(p.source)
-  const result = p.run.result
-
+/** Right column on desktop and tablet. On phones the same fields sit in the bottom sheet (SetupFields). */
+export function InputPanel({ width, ...p }: Props) {
   return (
     <aside
       className="panel scroll inputpanel"
       aria-label="Processing and metadata"
       style={{
-        width: p.width,
+        width,
         flex: '0 0 auto',
         minHeight: 0,
         display: 'flex',
@@ -69,6 +57,19 @@ export function InputPanel(p: Props) {
         borderLeft: '1px solid var(--border)',
       }}
     >
+      <SetupFields {...p} />
+    </aside>
+  )
+}
+
+/** Steps 2 and 3, the Run button and Run info. */
+export function SetupFields(p: SetupProps) {
+  const busy = p.run.status === 'queued' || p.run.status === 'uploading' || p.run.status === 'running'
+  const kind = sourceKind(p.source)
+  const result = p.run.result
+
+  return (
+    <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <p className="sec-title">2 · Processing</p>
         <ModeToggle mode={p.mode} onMode={p.onMode} kind={p.batch ? p.batch.kind : kind} modes={p.modes} />
@@ -137,6 +138,6 @@ export function InputPanel(p: Props) {
           </div>
         )}
       </div>
-    </aside>
+    </>
   )
 }
