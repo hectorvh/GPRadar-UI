@@ -28,7 +28,7 @@ export function StatusBanner({ backend, slow, onRetryBackend, run, warnings, not
         <span className="spin" aria-hidden="true" style={{ color: 'var(--accent)' }} />
         <p>
           Starting the detector server (free hosting, up to about a minute)…
-          {run.status === 'queued' && ' Your run will start when it is ready.'}
+          {run.status === 'queued' && ' Your run will start when it is ready'}
         </p>
       </div>,
     )
@@ -36,7 +36,7 @@ export function StatusBanner({ backend, slow, onRetryBackend, run, warnings, not
   if (backend === 'down') {
     items.push(
       <div key="down" className="warn note banner" role="alert">
-        <p>The detector server did not respond. It may be down or still starting.</p>
+        <p>The detector server did not respond. It may be down or still starting</p>
         <button type="button" className="btn sm" onClick={onRetryBackend}>
           Retry
         </button>

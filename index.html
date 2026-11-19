@@ -3,9 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="GPRadar: detect hyperbolas in ground-penetrating radar B-scans with a YOLO model." />
+    <meta name="description" content="GPRadar: detect hyperbolas (buried pipes, cables, voids) in ground-penetrating radar B-scans with a YOLO model. Open-source research prototype." />
     <title>GPRadar · Hyperbola detector</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#F5F7F8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#001A25" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href="https://gpradar.hectorvh.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GPRadar" />
+    <meta property="og:title" content="GPRadar · Hyperbola detector for GPR B-scans" />
+    <meta property="og:description" content="Upload a ground-penetrating radar B-scan or gprMax output and see detected hyperbolas, apex positions and approximate depths." />
+    <meta property="og:url" content="https://gpradar.hectorvh.com/" />
+    <meta property="og:image" content="https://gpradar.hectorvh.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GPRadar logo over radar hyperbolas with detection boxes" />
+    <meta name="twitter:card" content="summary_large_image" />
     <script>(function(){var t;try{t=localStorage.getItem("gpradar-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",t)})();</script>
   </head>
   <body>

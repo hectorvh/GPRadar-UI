@@ -69,7 +69,7 @@ export function detectionsToCsv(detections: Detection[], ctx: CsvContext): strin
 }
 
 /** gpradar_<input>_<date>.<ext> */
-export function exportFilename(input: string, date: Date, ext: 'csv' | 'png'): string {
+export function exportFilename(input: string, date: Date, ext: 'csv' | 'png' | 'zip'): string {
   return `gpradar_${safeStem(input)}_${isoDate(date)}.${ext}`
 }
 

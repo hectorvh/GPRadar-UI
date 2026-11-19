@@ -57,25 +57,25 @@ export type Validation =
   | { ok: true; kind: InputKind; type: Sniffed }
   | { ok: false; message: string }
 
-const UNSUPPORTED = 'Unsupported file type. Use PNG, JPG or gprMax output (.out, .h5).'
+const UNSUPPORTED = 'Unsupported file type. Use PNG, JPG or gprMax output (.out, .h5)'
 
 /** Checks that need only the name and size (sync). */
 export function checkNameAndSize(name: string, size: number): Validation | { ok: true; kind: InputKind } {
   const kind = kindFromName(name)
   if (!kind) return { ok: false, message: UNSUPPORTED }
-  if (size === 0) return { ok: false, message: 'The file is empty.' }
+  if (size === 0) return { ok: false, message: 'The file is empty' }
   const limit = maxBytes(kind)
-  if (size > limit) return { ok: false, message: `File too large (max ${megabytes(limit)}).` }
+  if (size > limit) return { ok: false, message: `File too large (max ${megabytes(limit)})` }
   return { ok: true, kind }
 }
 
 /** Magic bytes must agree with the extension's kind. */
 export function checkMagic(kind: InputKind, head: Uint8Array): Validation {
   const type = sniff(head)
-  if (!type) return { ok: false, message: `${UNSUPPORTED} The file content was not recognised.` }
+  if (!type) return { ok: false, message: `${UNSUPPORTED}. The file content was not recognised` }
   const contentKind: InputKind = type === 'hdf5' ? 'gprmax' : 'image'
   if (contentKind !== kind) {
-    return { ok: false, message: 'The file extension does not match its content.' }
+    return { ok: false, message: 'The file extension does not match its content' }
   }
   return { ok: true, kind, type }
 }

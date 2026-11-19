@@ -18,7 +18,14 @@ const DEFAULTS: Panels = { leftOpen: true, rightOpen: true, leftW: LEFT.def, rig
 
 const clamp = (v: number, lim: { min: number; max: number }) => Math.round(Math.min(lim.max, Math.max(lim.min, v)))
 
+/** On phones the side menu starts closed: it would push the results below the fold. */
+function defaults(): Panels {
+  const narrow = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 820px)').matches
+  return narrow ? { ...DEFAULTS, leftOpen: false } : DEFAULTS
+}
+
 function load(): Panels {
+  const DEFAULTS = defaults()
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Panels> | null
     if (!raw || typeof raw !== 'object') return DEFAULTS

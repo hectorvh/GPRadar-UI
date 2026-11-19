@@ -4,13 +4,15 @@ import { UploadIcon } from './icons'
 
 interface Props {
   onFile: (file: File) => void
+  /** Several files at once (project mode); then onFile is not used. */
+  onFiles?: (files: File[]) => void
   fileName: string | null
   error: string | null
   checking: boolean
 }
 
 /** Drag-and-drop + file input. Checks run in the parent (validate.ts). */
-export function UploadDrop({ onFile, fileName, error, checking }: Props) {
+export function UploadDrop({ onFile, onFiles, fileName, error, checking }: Props) {
   const [over, setOver] = useState(false)
 
   const onDragOver = (e: DragEvent) => {
@@ -22,8 +24,10 @@ export function UploadDrop({ onFile, fileName, error, checking }: Props) {
   const onDrop = (e: DragEvent) => {
     e.preventDefault()
     setOver(false)
-    const f = e.dataTransfer.files?.[0]
-    if (f) onFile(f)
+    const files = Array.from(e.dataTransfer.files ?? [])
+    if (onFiles) {
+      if (files.length) onFiles(files)
+    } else if (files[0]) onFile(files[0])
   }
 
   return (
@@ -33,10 +37,13 @@ export function UploadDrop({ onFile, fileName, error, checking }: Props) {
         className="sr"
         type="file"
         accept={ACCEPT}
+        multiple={!!onFiles}
         aria-describedby="upload-help upload-status"
         onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onFile(f)
+          const files = Array.from(e.target.files ?? [])
+          if (onFiles) {
+            if (files.length) onFiles(files)
+          } else if (files[0]) onFile(files[0])
           e.target.value = '' // allow choosing the same file again
         }}
       />
@@ -49,9 +56,9 @@ export function UploadDrop({ onFile, fileName, error, checking }: Props) {
         onDrop={onDrop}
       >
         <UploadIcon />
-        <span style={{ fontWeight: 500, color: 'var(--text)' }}>Drop a B-scan or browse</span>
+        <span style={{ fontWeight: 500, color: 'var(--text)' }}>{onFiles ? 'Drop or browse (several files)' : 'Drop or browse'}</span>
         <span id="upload-help" style={{ fontSize: 12 }}>
-          Raw gprMax (.out, .h5) or PNG / JPG
+          Raw (.out, .h5) or PNG / JPG
         </span>
       </label>
       <div id="upload-status" aria-live="polite" style={{ fontSize: 12 }}>
