@@ -4,10 +4,6 @@
 
 # GPRadar-UI
 
-> This branch (next) holds the next version, previewed at
-> <https://v2.gpradar.hectorvh.com>. The live site runs the latest release
-> from main.
-
 [![License](https://img.shields.io/github/license/hectorvh/GPRadar-UI)](https://github.com/hectorvh/GPRadar-UI/blob/main/LICENSE)
 [![Live demo](https://img.shields.io/website?url=https%3A%2F%2Fgpradar.hectorvh.com&label=live%20demo&up_message=online&down_message=offline)](https://gpradar.hectorvh.com)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
